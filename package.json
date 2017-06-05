@@ -1,0 +1,20 @@
+{
+  "name": "dynamo-webserver",
+  "version": "1.0.0",
+  "description": "This app exposes dynamo via rest api",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "Dynamo"
+  ],
+  "author": "Chidi Onuekwusi",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.4.1",
+    "body-parser": "^1.17.2",
+    "dynamo": "file:///C:\\Users\\superc\\Tenece\\Dynamo",
+    "express": "^4.15.3"
+  }
+}
