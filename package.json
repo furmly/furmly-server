@@ -14,7 +14,7 @@
   "dependencies": {
     "async": "^2.4.1",
     "body-parser": "^1.17.2",
-    "dynamo": "file:///C:\\Users\\superc\\Tenece\\Dynamo",
+    "dynamo": "file:///C:\\Users\\superc\\Tenece\\dynamo",
     "express": "^4.15.3"
   }
 }
