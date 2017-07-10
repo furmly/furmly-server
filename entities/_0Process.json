@@ -1,1 +1,1 @@
-{"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"_0Step"}]}
+{"fetchProcessor":{"type":"ObjectId","ref":"_0Processor"},"uid":{"type":"String","unique":true,"sparse":true},"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"_0Step"}]}

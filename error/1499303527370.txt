@@ -1,0 +1,30 @@
+::AssertionError: false == trueAssertionError: false == true
+    at new Client (C:\Users\superc\Tenece\Dynamo\src\index.js:248:11)
+    at DynamoStep.getState (C:\Users\superc\Tenece\Dynamo\src\index.js:232:13)
+    at new DynamoStep (C:\Users\superc\Tenece\Dynamo\src\index.js:172:25)
+    at C:\Users\superc\Tenece\Dynamo\src\index.js:1377:23
+    at C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3838:9
+    at C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:421:16
+    at iteratorCallback (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:998:13)
+    at C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:906:16
+    at C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3835:13
+    at C:\Users\superc\Tenece\Dynamo\src\index.js:1369:8
+    at C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3838:9
+    at C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:421:16
+    at eachOfArrayLike (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:991:9)
+    at eachOf (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:1051:5)
+    at _parallel (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3829:5)
+    at Object.parallelLimit [as parallel] (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3912:5)
+    at C:\Users\superc\Tenece\Dynamo\src\index.js:1366:13
+    at C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3830:24
+    at eachOfArrayLike (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:1003:9)
+    at eachOf (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:1051:5)
+    at _parallel (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3829:5)
+    at Object.parallelLimit [as parallel] (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3912:5)
+    at Object.EntityRepo.transformers.(anonymous function) [as _0Step] (C:\Users\superc\Tenece\Dynamo\src\index.js:1373:12)
+    at C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3830:24
+    at eachOfArrayLike (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:1003:9)
+    at eachOf (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:1051:5)
+    at _parallel (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3829:5)
+    at Object.parallelLimit [as parallel] (C:\Users\superc\Tenece\Dynamo\node_modules\async\dist\async.js:3912:5)	
+Thu Jul 06 2017 02:12:07 GMT+0100 (W. Central Africa Standard Time)

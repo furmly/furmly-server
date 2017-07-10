@@ -4,7 +4,7 @@
   "description": "This app exposes dynamo via rest api",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "set profile=integrationTest&& mocha --require test-helpers/chai.js"
   },
   "keywords": [
     "Dynamo"
@@ -13,8 +13,21 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.4.1",
+    "bcrypt": "^1.0.2",
     "body-parser": "^1.17.2",
-    "dynamo": "file:///C:\\Users\\superc\\Tenece\\dynamo",
-    "express": "^4.15.3"
+    "express": "^4.15.3",
+    "jsonwebtoken": "^7.4.1",
+    "mongoose": "^4.10.7",
+    "morgan": "^1.8.2",
+    "oauth2orize": "^1.8.0",
+    "passport": "^0.3.2",
+    "passport-http-bearer": "^1.0.1",
+    "passport-oauth2-client-password": "^0.1.2"
+  },
+  "devDependencies": {
+    "chai": "^4.0.2",
+    "chai-http": "^3.0.0",
+    "mocha": "^3.4.2",
+    "sinon": "^2.3.5"
   }
 }

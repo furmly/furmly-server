@@ -1,1 +1,1 @@
-{"processors":[{"type":"ObjectId","ref":"_0Processor"}],"postprocessors":[{"type":"ObjectId","ref":"_0Processor"}],"stepType":{"type":"String","required":true},"form":{"elements":[{"type":"ObjectId","ref":"_0Element"}]}}
+{"mode":{"type":"String"},"processors":[{"type":"ObjectId","ref":"_0Processor"}],"postprocessors":[{"type":"ObjectId","ref":"_0Processor"}],"stepType":{"type":"String","required":true},"form":{"elements":[{"type":"ObjectId","ref":"_0Element"}]}}
