@@ -116,7 +116,6 @@ describe('Integration Tests', function() {
 						});
 					});
 				});
-
 			});
 		});
 	});

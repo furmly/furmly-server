@@ -20,8 +20,9 @@ var express = require('express'),
 		entitiesRepository: new dynamo.EntityRepo({
 			folder: './entities/'
 		})
-	}),
-	conn = mongoose.createConnection(config.data.web_url);
+	});
+mongoose.Promise = global.Promise;
+var conn = mongoose.createConnection(config.data.web_url);
 var userManager = new auth.UserManager({
 	userStore: new auth.UserStore(mongoose, conn),
 	clientStore: new auth.ClientStore(mongoose, conn),
@@ -35,13 +36,8 @@ var userManager = new auth.UserManager({
 	webClient: config.clients.web,
 	mobileClient: config.clients.mobile
 });
-var constants = {
-	CLAIMS: {
-		PROCESSOR: 'http://www.dynamo.com/processor',
-		PROCESS: 'http://www.dynamo.com/process'
-	}
-};
-dynamoEngine.userManager = userManager;
+
+dynamoEngine.setUserManager(userManager);
 
 app.use(bodyParser.json());
 
@@ -75,6 +71,7 @@ function checkClaim(type, value, req, res, next) {
 	}, {
 		claims: []
 	});
+
 	var hasClaim = joinedClaims.filter(function(claim) {
 		return claim.type == type && claim.value == value(req);
 	});
@@ -115,8 +112,8 @@ function emptyVal() {
 	return null;
 }
 
-var ensureHasProcessClaim = checkClaim.bind(null, constants.CLAIMS.PROCESS, checkId);
-var ensureHasProcessorClaim = checkClaim.bind(null, constants.CLAIMS.PROCESSOR, checkId);
+var ensureHasProcessClaim = checkClaim.bind(null, userManager.constants.CLAIMS.PROCESS, checkId);
+var ensureHasProcessorClaim = checkClaim.bind(null, userManager.constants.CLAIMS.PROCESSOR, checkId);
 /*
  	Identity Server
  */
@@ -227,8 +224,6 @@ processes.param('id', function(req, res, next, id) {
 });
 
 processes.get('/describe/:id', [ensureHasProcessClaim, function(req, res) {
-	console.log('query:');
-	console.log(req.query);
 	var query = req.query;
 	if (Object.keys(req.query).length === 0) {
 		query = null;
@@ -281,7 +276,7 @@ app.listen(4500, function() {
 			//apply for all the claims required in this process.
 			async.waterfall([
 				userManager.saveClaim.bind(userManager, {
-					type: constants.CLAIMS.PROCESS,
+					type: userManager.constants.CLAIMS.PROCESS,
 					value: proc._id
 				}),
 				function(result) {
@@ -314,7 +309,7 @@ app.listen(4500, function() {
 		});
 		dynamoEngine.on('default-processor-created', function(proc) {
 			userManager.saveClaim({
-				type: constants.CLAIMS.PROCESSOR,
+				type: userManager.constants.CLAIMS.PROCESSOR,
 				value: proc._id
 			}, function(er, claim) {
 				userManager.addClaimToRole(userManager.defaultRole, null, claim, function(er, role) {
@@ -323,13 +318,9 @@ app.listen(4500, function() {
 			});
 		});
 		dynamoEngine.init(function(er) {
-			if (er) {
+			if (er)
 				throw er;
-			}
 
-			dynamoEngine.entitiesRepository.getConfigNames(function(er, ext) {
-				console.log(ext);
-			});
 		});
 	});
 });

@@ -1,0 +1,12 @@
+::TypeError: process.exit is not a functionTypeError: process.exit is not a function
+    at Object.<anonymous> (vm.js:8:9)
+    at NodeVM.run (C:\Users\superc\Tenece\Dynamo\node_modules\vm2\lib\main.js:420:27)
+    at Client.run (C:\Users\superc\Tenece\Dynamo\src\index.js:298:21)
+    at DynamoStep.run (C:\Users\superc\Tenece\Dynamo\src\index.js:399:14)
+    at processStep (C:\Users\superc\Tenece\Dynamo\src\index.js:572:9)
+    at C:\Users\superc\Tenece\Dynamo\src\index.js:616:14
+    at C:\Users\superc\Tenece\Dynamo\node_modules\mongodb\lib\collection.js:447:18
+    at handleCallback (C:\Users\superc\Tenece\Dynamo\node_modules\mongodb\lib\utils.js:120:56)
+    at C:\Users\superc\Tenece\Dynamo\node_modules\mongodb\lib\collection.js:753:5
+    at C:\Users\superc\Tenece\Dynamo\node_modules\mongodb-core\lib\connection\pool.js:461:18	
+Wed Jul 12 2017 02:04:57 GMT+0100 (W. Central Africa Standard Time)
