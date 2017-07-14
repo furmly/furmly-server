@@ -94,6 +94,9 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
+out/
+entities/
+error/
 
 # Typescript v1 declaration files
 typings/
