@@ -21,7 +21,7 @@ module.exports = {
 			password: "password"
 		},
 		fileUpload: {
-			ttl: 60000,
+			ttl: 600000,
 			permDir: "./perm",
 			tempDir: "./temp"
 		},
@@ -37,6 +37,9 @@ module.exports = {
 		},
 		postprocessors: {
 			ttl: 50000
+		},
+		userManager:{
+			tokenTTL:3600
 		},
 		token_generator: {
 			issuer: "seadragon:authentication_server",
@@ -68,6 +71,11 @@ module.exports = {
 		},
 		processors: {
 			ttl: 5000
+		},
+		fileUpload: {
+			ttl: 60000,
+			permDir: "./perm_test",
+			tempDir: "./temp_test"
 		},
 		postprocessors: {
 			ttl: 50000
