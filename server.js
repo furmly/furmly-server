@@ -19,6 +19,10 @@ var express = require("express"),
     bodyParser = require("body-parser"),
     processes = express.Router(),
     morgan = require("morgan"),
+    threadPool = new (require("./lib/worker"))(
+        (config.threadPool && config.threadPool.size) ||
+            require("os").cpus().length
+    ),
     admin = express.Router(),
     uploadRouter = express.Router(),
     processors = express.Router(),
@@ -60,7 +64,8 @@ let conn = mongoose.createConnection(config.data.web_url),
 dynamoEngine.setInfrastructure({
     userManager,
     fileParser,
-    fileUpload
+    fileUpload,
+    threadPool
 });
 
 app.use(bodyParser.json());
@@ -73,10 +78,12 @@ app.use(
 );
 
 function unauthorized(req, res) {
+    let msg = "You are not authorized";
     res.status(401);
+    res.statusMessage = msg;
     res.send({
         error: "Unauthorized",
-        error_description: "You are not authorized"
+        error_description: msg
     });
 }
 
@@ -103,10 +110,13 @@ function verifyIfRequired(getItem, req, res, next) {
     debug("checking if identity is required...");
     var item = getItem(req);
     if (!item)
-        return debug("cannot find the item"), sendResponse.call(
-            res,
-            new Error("we couldnt find what you were looking for"),
-            404
+        return (
+            debug("cannot find the item"),
+            sendResponse.call(
+                res,
+                new Error("we couldnt find what you were looking for"),
+                404
+            )
         );
     if (item.requiresIdentity || typeof item.requiresIdentity == "undefined")
         return debug("identity is required"), verify(req, res, next);
@@ -152,27 +162,25 @@ function checkClaim(type, value, failed, req, res, next) {
 
 function sendResponse(er, result) {
     if (er)
-        return this.status(500), this.send({
-            error:
-                "An unknown error occurred. We' have to find out why. In the meantime try a refresh.",
-            error_description: er.message
-        });
+        return (
+            this.status(500),
+            (this.statusMessage = er.message || "Unknown Error occurred"),
+            this.send({
+                error:
+                    "An unknown error occurred. We' have to find out why. In the meantime try a refresh.",
+                error_description: er.message
+            })
+        );
     this.send(result);
 }
 
 function getRangeQuery(req) {
     var query = req.query.lastId
-        ? req.query.dir == "prev"
-          ? {
-                _id: {
-                    $lt: req.query.lastId
-                }
-            }
-          : {
-                _id: {
-                    $gt: req.query.lastId
-                }
-            }
+        ? {
+              _id: {
+                  $lt: req.query.lastId
+              }
+          }
         : {};
     return query;
 }
@@ -341,6 +349,7 @@ function _init() {
         });
         dynamoEngine.init(function(er) {
             if (er) throw er;
+            threadPool.start();
         });
     });
 }
@@ -600,14 +609,21 @@ processors.param("id", function(req, res, next, id) {
         },
         function(er, proc) {
             if (er)
-                return res.status(500), res.send({
-                    message: "An error occurred while fetching the processor",
-                    obj: er
-                });
+                return (
+                    res.status(500),
+                    res.send({
+                        message:
+                            "An error occurred while fetching the processor",
+                        obj: er
+                    })
+                );
             if (!proc)
-                return res.status(404), res.send({
-                    message: "Could not find processor"
-                });
+                return (
+                    res.status(404),
+                    res.send({
+                        message: "Could not find processor"
+                    })
+                );
 
             req.processor = proc;
             next();
@@ -627,14 +643,20 @@ processes.param("id", function(req, res, next, id) {
         },
         function(er, proc) {
             if (er)
-                return res.status(500), res.send({
-                    message: "An error occurred while fetching the process",
-                    obj: er
-                });
+                return (
+                    res.status(500),
+                    res.send({
+                        message: "An error occurred while fetching the process",
+                        obj: er
+                    })
+                );
             if (!proc)
-                return res.status(404), res.send({
-                    message: "Could not find process"
-                });
+                return (
+                    res.status(404),
+                    res.send({
+                        message: "Could not find process"
+                    })
+                );
             debug(`process found ${JSON.stringify(proc, null, " ")}`);
             req.process = proc;
             next();

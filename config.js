@@ -30,7 +30,7 @@ module.exports = {
 			dynamo_url: "mongodb://localhost:27017/dynamo"
 		},
 		processors: {
-			ttl: 5000
+			ttl: 165000
 		},
 		log: {
 			server: true

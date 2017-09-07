@@ -24,6 +24,7 @@
     "passport": "^0.3.2",
     "passport-http-bearer": "^1.0.1",
     "passport-oauth2-client-password": "^0.1.2",
+    "webworker-threads": "^0.7.13",
     "xlsx": "^0.11.1"
   },
   "devDependencies": {
