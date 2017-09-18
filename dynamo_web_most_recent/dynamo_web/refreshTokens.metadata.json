@@ -1,0 +1,1 @@
+{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo_web.refreshTokens"},{"v":2,"key":{"createdAt":1},"name":"createdAt_1","ns":"dynamo_web.refreshTokens","expireAfterSeconds":3720}]}

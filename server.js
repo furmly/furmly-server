@@ -9,6 +9,7 @@ var express = require("express"),
     auth = require("./lib/auth"),
     passport = require("passport"),
     multer = require("multer"),
+    templating=require('./lib/templating')(config),
     upload = multer({
         dest: config.fileUpload ? config.fileUpload.tempDir : "/temp"
     }),
@@ -37,6 +38,7 @@ var express = require("express"),
 mongoose.Promise = global.Promise;
 let conn = mongoose.createConnection(config.data.web_url),
     userManager = new auth.UserManager({
+        domainStore: new auth.DomainStore(mongoose, conn),
         userStore: new auth.UserStore(mongoose, conn),
         clientStore: new auth.ClientStore(mongoose, conn),
         roleStore: new auth.RoleStore(mongoose, conn),
@@ -65,7 +67,8 @@ dynamoEngine.setInfrastructure({
     userManager,
     fileParser,
     fileUpload,
-    threadPool
+    threadPool,
+    templating
 });
 
 app.use(bodyParser.json());
@@ -418,6 +421,32 @@ app.use("/auth/token", [
     server.token(),
     unauthorized
 ]);
+admin.get("/claimable", [
+    verify,
+    checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
+    function(req, res) {
+        dynamoEngine.queryProcessor({}, (er, processors) => {
+            if (er) return sendResponse.call(res, er);
+
+            dynamoEngine.queryProcess({}, (er, processes) => {
+                if (er) return sendResponse.call(res, er);
+
+                sendResponse.call(
+                    res,
+                    null,
+                    processors
+                        .map(x => ({ displayLabel: x.title, _id: x._id }))
+                        .concat(
+                            processes.map(x => ({
+                                displayLabel: x.title,
+                                _id: x._id
+                            }))
+                        )
+                );
+            });
+        });
+    }
+]);
 
 admin.post("/user", [
     verify,
@@ -456,6 +485,15 @@ admin.post("/claim", [
     }
 ]);
 
+admin.delete("/claim/:id", [
+    verify,
+    checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
+    function(req, res) {
+        debug(req.params);
+        userManager.deleteClaim(req.params.id, sendResponse.bind(res));
+    }
+]);
+
 admin.post("/menu", [
     verify,
     checkClaim.bind(null, userManager.adminClaims.can_manage_menu, emptyVal),
@@ -486,8 +524,9 @@ admin.get("/acl", [
                                 if (!proc)
                                     return sendResponse.call(res, null, menu);
                                 debug("running menu filter...");
+                                debug(req.user);
                                 dynamoEngine.runProcessor(
-                                    Object.assign({}, createContext(req), {
+                                    Object.assign(createContext(req), {
                                         menu
                                     }),
                                     proc,
@@ -580,6 +619,34 @@ admin.get("/claim/paged", [
     checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
     function(req, res) {
         userManager.getClaimRange(
+            getRangeQuery(req),
+            parseInt(req.query.count),
+            sendResponse.bind(res)
+        );
+    }
+]);
+
+admin.post("/domain", [
+    verify,
+    checkClaim.bind(null, userManager.adminClaims.can_manage_domains, emptyVal),
+    function(req, res) {
+        userManager.saveDomain(req.body, sendResponse.bind(res));
+    }
+]);
+
+admin.get("/domain", [
+    verify,
+    checkClaim.bind(null, userManager.adminClaims.can_manage_domains, emptyVal),
+    function(req, res) {
+        userManager.getDomains({}, sendResponse.bind(res));
+    }
+]);
+
+admin.get("/domain/paged", [
+    verify,
+    checkClaim.bind(null, userManager.adminClaims.can_manage_domains, emptyVal),
+    function(req, res) {
+        userManager.getDomainRange(
             getRangeQuery(req),
             parseInt(req.query.count),
             sendResponse.bind(res)
@@ -717,6 +784,10 @@ uploadRouter.get("/preview/:id", function(req, res) {
     });
 });
 
+app.use(function(req,res,next){
+    res.set("Cache-Control","no-cache");
+    next();
+});
 app.use("/api/upload", [verify, uploadRouter]);
 app.use("/api/process", [processes]);
 app.use("/api/processors", [processors]);
