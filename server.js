@@ -3,13 +3,17 @@ var express = require("express"),
     dynamo = require("dynamo")(config),
     debug = require("debug")("dynamo-web-server"),
     mongoose = require("mongoose"),
+    uuid = require("uuid"),
+    url = require("url"),
+    crypto = require("crypto"),
     passport = require("passport"),
     oauth2orize = require("oauth2orize"),
     passport_auth = require("./lib/passport_auth"),
     auth = require("./lib/auth"),
     passport = require("passport"),
+    request = require("request"),
     multer = require("multer"),
-    templating=require('./lib/templating')(config),
+    templating = require("./lib/templating")(config),
     upload = multer({
         dest: config.fileUpload ? config.fileUpload.tempDir : "/temp"
     }),
@@ -68,7 +72,11 @@ dynamoEngine.setInfrastructure({
     fileParser,
     fileUpload,
     threadPool,
-    templating
+    templating,
+    request,
+    url,
+    uuid,
+    crypto
 });
 
 app.use(bodyParser.json());
@@ -128,6 +136,21 @@ function verifyIfRequired(getItem, req, res, next) {
     next();
 }
 
+function getDomain(req, fn) {
+    userManager.getDomains({ _id: req.user.domain }, (er, domains) => {
+        if (er) return fn(er);
+        if (domains.length) {
+            req._domain = domains[0];
+            req._domain.config =
+                req._domain.config &&
+                req._domain.config.reduce((sum, x) => {
+                    return (sum[x.name] = x.value), sum;
+                }, {});
+        }
+        fn();
+    });
+}
+
 function checkClaim(type, value, failed, req, res, next) {
     if (Array.prototype.slice(arguments).length == 5) {
         next = res;
@@ -163,10 +186,12 @@ function checkClaim(type, value, failed, req, res, next) {
     unauthorized(req, res);
 }
 
-function sendResponse(er, result) {
+function sendResponse(er, result, resultType) {
     if (er)
         return (
+            debug(er),
             this.status(500),
+            this.append("ErrorMessage", er.message),
             (this.statusMessage = er.message || "Unknown Error occurred"),
             this.send({
                 error:
@@ -174,6 +199,7 @@ function sendResponse(er, result) {
                 error_description: er.message
             })
         );
+
     this.send(result);
 }
 
@@ -222,14 +248,24 @@ function _clientAuthentication(req, res, next) {
 }
 
 function createContext(req) {
-    let context = req.body || {},
+    let context =
+            (req.body && Object.keys(req.body).length && req.body) ||
+            req.query ||
+            {},
         authorized = req._clientAuthorized,
+        domain = Object.assign({}, req._domain),
         user = Object.assign({}, req.user);
     Object.defineProperties(context, {
         $authorized: {
             enumerable: false,
             get: function() {
                 return authorized;
+            }
+        },
+        $domain: {
+            enumerable: false,
+            get: function() {
+                return domain;
             }
         },
         $user: {
@@ -667,10 +703,13 @@ admin.get("/menu", [
 ]);
 
 processors.param("id", function(req, res, next, id) {
+    debug("fetching processor " + id);
+    let query = {};
+    if (dynamoEngine.isValidID(id)) query._id = id;
+    else query.uid = id;
+    debug(query);
     dynamoEngine.queryProcessor(
-        {
-            _id: id
-        },
+        query,
         {
             one: true
         },
@@ -735,14 +774,24 @@ processes.get("/describe/:id", [
     verifyProcessIfRequired,
     ensureHasProcessClaim,
     function(req, res) {
-        var query = req.query;
-        query.$user = req.user;
-        req.process.describe(query, function(er, description, fetchedData) {
-            sendResponse.call(res, er, {
-                description: description,
-                data: fetchedData
+        const describe = () =>
+            req.process.describe(
+                Object.assign(createContext(req), req.query || {}),
+                function(er, description, fetchedData) {
+                    sendResponse.call(res, er, {
+                        description: description,
+                        data: fetchedData
+                    });
+                }
+            );
+        if (req.user) {
+            return getDomain(req, er => {
+                if (er) return sendResponse.call(res, er);
+                describe();
             });
-        });
+        }
+
+        describe();
     }
 ]);
 
@@ -750,19 +799,37 @@ processes.post("/run/:id", [
     verifyProcessIfRequired,
     ensureHasProcessClaim,
     function(req, res) {
-        req.process.run(createContext(req), sendResponse.bind(res));
+        const send = () =>
+            req.process.run(createContext(req), sendResponse.bind(res));
+        if (req.user) {
+            //populate domain info.
+            return getDomain(req, er => {
+                if (er) return sendResponse.call(res, er);
+                send();
+            });
+        }
+        send();
     }
 ]);
 
-processors.post("/run/:id", [
+processors.use("/run/:id", [
     verifyProcessorIfRequired,
     ensureHasProcessorClaim,
     function(req, res) {
-        dynamoEngine.runProcessor(
-            createContext(req),
-            req.processor,
-            sendResponse.bind(res)
-        );
+        const send = () =>
+            dynamoEngine.runProcessor(
+                createContext(req),
+                req.processor,
+                sendResponse.bind(res)
+            );
+
+        if (req.user) {
+            return getDomain(req, er => {
+                if (er) return sendResponse.call(res, er);
+                send();
+            });
+        }
+        send();
     }
 ]);
 
@@ -784,8 +851,8 @@ uploadRouter.get("/preview/:id", function(req, res) {
     });
 });
 
-app.use(function(req,res,next){
-    res.set("Cache-Control","no-cache");
+app.use(function(req, res, next) {
+    res.set("Cache-Control", "no-cache");
     next();
 });
 app.use("/api/upload", [verify, uploadRouter]);
