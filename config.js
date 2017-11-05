@@ -39,7 +39,7 @@ module.exports = {
 			ttl: 50000
 		},
 		userManager:{
-			tokenTTL:3600
+			tokenTTL:86400
 		},
 		token_generator: {
 			issuer: "seadragon:authentication_server",

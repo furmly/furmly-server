@@ -255,26 +255,33 @@ function createContext(req) {
         authorized = req._clientAuthorized,
         domain = Object.assign({}, req._domain),
         user = Object.assign({}, req.user);
-    Object.defineProperties(context, {
-        $authorized: {
-            enumerable: false,
-            get: function() {
-                return authorized;
+    (requestContext = Object.assign({}, req.headers)),
+        Object.defineProperties(context, {
+            $authorized: {
+                enumerable: false,
+                get: function() {
+                    return authorized;
+                }
+            },
+            $domain: {
+                enumerable: false,
+                get: function() {
+                    return domain;
+                }
+            },
+            $user: {
+                enumerable: false,
+                get: function() {
+                    return user;
+                }
+            },
+            $requestContext: {
+                enumerable: false,
+                get: function() {
+                    return requestContext;
+                }
             }
-        },
-        $domain: {
-            enumerable: false,
-            get: function() {
-                return domain;
-            }
-        },
-        $user: {
-            enumerable: false,
-            get: function() {
-                return user;
-            }
-        }
-    });
+        });
 
     return context;
 }
@@ -461,26 +468,37 @@ admin.get("/claimable", [
     verify,
     checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
     function(req, res) {
-        dynamoEngine.queryProcessor({}, (er, processors) => {
-            if (er) return sendResponse.call(res, er);
-
-            dynamoEngine.queryProcess({}, (er, processes) => {
+        dynamoEngine.queryProcessor(
+            {},
+            { fields: { title: 1 }, noTransformaton: true },
+            (er, processors) => {
                 if (er) return sendResponse.call(res, er);
 
-                sendResponse.call(
-                    res,
-                    null,
-                    processors
-                        .map(x => ({ displayLabel: x.title, _id: x._id }))
-                        .concat(
-                            processes.map(x => ({
-                                displayLabel: x.title,
-                                _id: x._id
-                            }))
-                        )
+                dynamoEngine.queryProcess(
+                    {},
+                    { fields: { title: 1 }, noTransformaton: true },
+                    (er, processes) => {
+                        if (er) return sendResponse.call(res, er);
+
+                        sendResponse.call(
+                            res,
+                            null,
+                            processors
+                                .map(x => ({
+                                    displayLabel: x.title,
+                                    _id: x._id
+                                }))
+                                .concat(
+                                    processes.map(x => ({
+                                        displayLabel: x.title,
+                                        _id: x._id
+                                    }))
+                                )
+                        );
+                    }
                 );
-            });
-        });
+            }
+        );
     }
 ]);
 

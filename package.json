@@ -4,7 +4,9 @@
   "description": "This app exposes dynamo via rest api",
   "main": "index.js",
   "scripts": {
-    "test": "set profile=integrationTest&& mocha --require test-helpers/chai.js"
+    "test": "set profile=integrationTest&& mocha --require test-helpers/chai.js",
+    "postinstall":"postinstall.bat",
+    "try":"try.bat"
   },
   "keywords": [
     "Dynamo"
@@ -26,6 +28,7 @@
     "passport-http-bearer": "^1.0.1",
     "passport-oauth2-client-password": "^0.1.2",
     "request": "^2.81.0",
+    "uuid": "^3.1.0",
     "webworker-threads": "^0.7.13",
     "xlsx": "^0.11.1"
   },
