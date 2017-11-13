@@ -763,7 +763,8 @@ processes.param("id", function(req, res, next, id) {
     dynamoEngine.queryProcess(
         query,
         {
-            one: true
+            one: true,
+            full:true
         },
         function(er, proc) {
             if (er)
