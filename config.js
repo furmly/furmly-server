@@ -74,8 +74,8 @@ module.exports = {
 			tempDir: "./temp"
 		},
 		data: {
-			web_url: "mongodb://admin:55%40lcdlrow@localhost:27017/dynamo_web",
-			dynamo_url: "mongodb://admin:55%40lcdlrow@localhost:27017/dynamo"
+			web_url: "mongodb://teneceadmin:55%40lcdlrow@localhost:27017/dynamo_web",
+			dynamo_url: "mongodb://tenececadmin:55%40lcdlrow@localhost:27017/dynamo"
 		},
 		processors: {
 			ttl: 165000
