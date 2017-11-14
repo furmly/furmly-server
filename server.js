@@ -1,5 +1,7 @@
 var express = require("express"),
-    config = require("./config")[process.env.profile || "dev"],
+    config = require("./config")[
+        process.env.profile || process.env.NODE_ENV || "dev"
+    ],
     dynamo = require("dynamo")(config),
     debug = require("debug")("dynamo-web-server"),
     mongoose = require("mongoose"),
@@ -764,7 +766,7 @@ processes.param("id", function(req, res, next, id) {
         query,
         {
             one: true,
-            full:true
+            full: true
         },
         function(er, proc) {
             if (er)
