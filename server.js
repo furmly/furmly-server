@@ -889,7 +889,7 @@ app.use(function(er, req, res, next) {
     sendResponse.call(res, er);
 });
 
-if (process.env.NODE_ENV == "production") {
+if (process.env.NODE_ENV == "production" || process.env.NODE_ENV == "test") {
     const fs = require("fs"),
         options = {
             key: fs.readFileSync("server-key.pem"),
