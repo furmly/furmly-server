@@ -1,0 +1,1 @@
+{"feePurpose":{"type":"ObjectId","ref":"FeePurpose"},"feeBreakdown":[{"item":{"type":"String"},"amount":{"type":"Number"}}],"fee":{"type":"Number"},"criteria":{"type":"Mixed"},"domain":{"type":"ObjectId"}}

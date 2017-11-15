@@ -1,0 +1,1 @@
+{"name":{"type":"String","required":true},"domain":{"type":"String","required":true},"campus":{"type":"ObjectId","ref":"Campus"},"code":{"type":"String","required":true}}

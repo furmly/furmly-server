@@ -1,0 +1,1 @@
+{"name":{"type":"String","required":true},"group":{"type":"String"},"domain":{"type":"ObjectId"}}
