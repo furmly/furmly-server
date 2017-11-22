@@ -215,6 +215,9 @@ function getRangeQuery(req) {
         : {};
     return query;
 }
+function toRegex(string) {
+    return new RegExp(string, "i");
+}
 
 function checkId(req) {
     return req.params.id;
@@ -618,7 +621,15 @@ admin.get("/user", [
     checkClaim.bind(null, userManager.adminClaims.can_manage_users, emptyVal),
     function(req, res) {
         userManager.getUserRange(
-            getRangeQuery(req),
+            Object.assign(
+                {},
+                (req.query.domain && { domain: req.query.domain }) || {},
+                (req.query.username && {
+                    username: toRegex(req.query.username)
+                }) ||
+                    {},
+                getRangeQuery(req)
+            ),
             parseInt(req.query.count),
             sendResponse.bind(res)
         );
@@ -639,7 +650,12 @@ admin.get("/role", [
     function(req, res) {
         if (!req.query.all)
             return userManager.getRoleRange(
-                getRangeQuery(req),
+                Object.assign(
+                    (req.query.domain && { domain: req.query.domain }) || {},
+                    (req.query.name && { name: toRegex(req.query.name) }) ||
+                        {},
+                    getRangeQuery(req)
+                ),
                 parseInt(req.query.count),
                 sendResponse.bind(res)
             );
@@ -675,7 +691,13 @@ admin.get("/claim/paged", [
     checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
     function(req, res) {
         userManager.getClaimRange(
-            getRangeQuery(req),
+            Object.assign(
+                (req.query.description && {
+                    description: toRegex(req.query.description)
+                }) ||
+                    {},
+                getRangeQuery(req)
+            ),
             parseInt(req.query.count),
             sendResponse.bind(res)
         );
@@ -703,7 +725,10 @@ admin.get("/domain/paged", [
     checkClaim.bind(null, userManager.adminClaims.can_manage_domains, emptyVal),
     function(req, res) {
         userManager.getDomainRange(
-            getRangeQuery(req),
+            Object.assign(
+                (req.query.name && { name: toRegex(req.query.name) }) || {},
+                getRangeQuery(req)
+            ),
             parseInt(req.query.count),
             sendResponse.bind(res)
         );
@@ -715,7 +740,13 @@ admin.get("/menu", [
     checkClaim.bind(null, userManager.adminClaims.can_manage_menu, emptyVal),
     function(req, res) {
         userManager.getMenuRange(
-            getRangeQuery(req),
+            Object.assign(
+                (req.query.title && {
+                    displayLabel: toRegex(req.query.title)
+                }) ||
+                    {},
+                getRangeQuery(req)
+            ),
             parseInt(req.query.count),
             sendResponse.bind(res)
         );
@@ -889,7 +920,12 @@ app.use(function(er, req, res, next) {
     sendResponse.call(res, er);
 });
 
-if (process.env.NODE_ENV == "production" || process.env.NODE_ENV == "test") {
+if (
+    process.env.NODE_ENV == "production" ||
+    process.env.NODE_ENV == "test" ||
+    process.env.profile == "test" ||
+    process.env.profile == "production"
+) {
     const fs = require("fs"),
         options = {
             key: fs.readFileSync("server-key.pem"),
