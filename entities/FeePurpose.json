@@ -1,1 +1,1 @@
-{"name":{"type":"String"},"hasCommission":{"type":"Boolean"},"domain":{"type":"ObjectId"}}
+{"name":{"type":"String"},"uid":{"type":"String"},"hasCommission":{"type":"Boolean"},"domain":{"type":"ObjectId"}}

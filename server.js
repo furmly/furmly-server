@@ -652,8 +652,7 @@ admin.get("/role", [
             return userManager.getRoleRange(
                 Object.assign(
                     (req.query.domain && { domain: req.query.domain }) || {},
-                    (req.query.name && { name: toRegex(req.query.name) }) ||
-                        {},
+                    (req.query.name && { name: toRegex(req.query.name) }) || {},
                     getRangeQuery(req)
                 ),
                 parseInt(req.query.count),
@@ -920,27 +919,17 @@ app.use(function(er, req, res, next) {
     sendResponse.call(res, er);
 });
 
-if (
-    process.env.NODE_ENV == "production" ||
-    process.env.NODE_ENV == "test" ||
-    process.env.profile == "test" ||
-    process.env.profile == "production"
-) {
-    const fs = require("fs"),
-        options = {
-            key: fs.readFileSync("server-key.pem"),
-            cert: fs.readFileSync("server-crt.pem"),
-            ca: fs.readFileSync("ca-crt.pem"),
-            requestCert: true,
-            rejectUnauthorized: false
-        },
-        port = config.port || process.env.PORT || 443;
-    debug(`listening on ${port}`);
-    https.createServer(options, app).listen(port, _init);
-    return;
-}
-
-app.listen(config.port || process.env.PORT || 4500, _init);
+const fs = require("fs"),
+    options = {
+        key: fs.readFileSync("server-key.pem"),
+        cert: fs.readFileSync("server-crt.pem"),
+        ca: fs.readFileSync("ca-crt.pem"),
+        requestCert: true,
+        rejectUnauthorized: false
+    },
+    port = config.port || process.env.PORT || 443;
+debug(`listening on ${port}`);
+https.createServer(options, app).listen(port, _init);
 
 if (process.env.profile !== "integrationTest")
     process.on("uncaughtException", function(er) {

@@ -1,1 +1,1 @@
-{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo._0processes"},{"v":2,"unique":true,"key":{"uid":1},"name":"uid_1","ns":"dynamo._0processes","sparse":true,"background":true}]}
+{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo._0processes"},{"v":2,"unique":true,"key":{"uid":1},"name":"uid_1","background":true,"ns":"dynamo._0processes","sparse":true}]}
