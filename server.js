@@ -32,12 +32,14 @@ var express = require("express"),
     ),
     admin = express.Router(),
     uploadRouter = express.Router(),
+    downloadRouter = express.Router(),
     processors = express.Router(),
     entities = express.Router(),
     asyncValidators = express.Router(),
     dynamoEngine = new dynamo.Engine({
         entitiesRepository: new dynamo.EntityRepo({
-            folder: "./entities/"
+            folder: "./entities/",
+            storeTTL: config.entRepo.storeTTL
         })
     });
 //debug(config.clients);
@@ -81,7 +83,6 @@ dynamoEngine.setInfrastructure({
     crypto
 });
 
-app.use(bodyParser.json());
 app.use(
     morgan("dev", {
         skip: function() {
@@ -89,6 +90,7 @@ app.use(
         }
     })
 );
+app.use(bodyParser.json());
 
 function unauthorized(req, res) {
     let msg = "You are not authorized";
@@ -259,6 +261,8 @@ function createContext(req) {
             {},
         authorized = req._clientAuthorized,
         domain = Object.assign({}, req._domain),
+        uiOnDemand =
+            (req.body && req.body.$uiOnDemand) || req.query.$uiOnDemand,
         user = Object.assign({}, req.user);
     (requestContext = Object.assign({}, req.headers)),
         Object.defineProperties(context, {
@@ -284,6 +288,12 @@ function createContext(req) {
                 enumerable: false,
                 get: function() {
                     return requestContext;
+                }
+            },
+            $uiOnDemand: {
+                enumerable: false,
+                get: function() {
+                    return uiOnDemand;
                 }
             }
         });
@@ -584,13 +594,24 @@ admin.get("/acl", [
                                     return sendResponse.call(res, null, menu);
                                 debug("running menu filter...");
                                 debug(req.user);
-                                dynamoEngine.runProcessor(
-                                    Object.assign(createContext(req), {
-                                        menu
-                                    }),
-                                    proc,
-                                    sendResponse.bind(res)
-                                );
+                                const run = () => {
+                                    dynamoEngine.runProcessor(
+                                        Object.assign(createContext(req), {
+                                            menu
+                                        }),
+                                        proc,
+                                        sendResponse.bind(res)
+                                    );
+                                };
+
+                                if (req.user) {
+                                    return getDomain(req, er => {
+                                        if (er)
+                                            return sendResponse.call(res, er);
+                                        run();
+                                    });
+                                }
+                                run();
                             }
                         );
                     }
@@ -827,7 +848,7 @@ processes.get("/describe/:id", [
     function(req, res) {
         const describe = () =>
             req.process.describe(
-                Object.assign(createContext(req), req.query || {}),
+                Object.assign(req.query || {}, createContext(req)),
                 function(er, description, fetchedData) {
                     sendResponse.call(res, er, {
                         description: description,
@@ -902,11 +923,25 @@ uploadRouter.get("/preview/:id", function(req, res) {
     });
 });
 
+downloadRouter.get("/download/:id", function(req, res) {
+    fileUpload.readFile(req.params.id, function(er, data, description) {
+        if (er) return sendResponse.call(res, er);
+
+        res.append("Content-Type", description.mime);
+        res.append(
+            "Content-Disposition",
+            "attachment; filename=" + description.originalName
+        );
+        res.send(data);
+    });
+});
+
 app.use(function(req, res, next) {
     res.set("Cache-Control", "no-cache");
     next();
 });
 app.use("/api/upload", [verify, uploadRouter]);
+app.use("/api/download", [verify, downloadRouter]);
 app.use("/api/process", [processes]);
 app.use("/api/processors", [processors]);
 if (process.env.NODE_ENV !== "production")

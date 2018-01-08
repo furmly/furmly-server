@@ -1,0 +1,1 @@
+{"courses":[{"type":"ObjectId","ref":"CourseAssignment"}],"studentId":{"type":"ObjectId"},"semester":{"type":"ObjectId","ref":"Semester"},"session":{"type":"ObjectId","ref":"Session"}}
