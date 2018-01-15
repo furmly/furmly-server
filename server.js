@@ -39,7 +39,8 @@ var express = require("express"),
     dynamoEngine = new dynamo.Engine({
         entitiesRepository: new dynamo.EntityRepo({
             folder: "./entities/",
-            storeTTL: config.entRepo.storeTTL
+            storeTTL: config.entRepo.storeTTL,
+            config
         })
     });
 //debug(config.clients);
