@@ -85,6 +85,9 @@ module.exports = {
 		processors: {
 			ttl: 165000
 		},
+        entRepo: {
+            storeTTL: 600
+        },
 		log: {
 			server: true
 		},
