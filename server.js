@@ -80,7 +80,6 @@ dynamoEngine.setInfrastructure({
     templating,
     request,
     url,
-    uuid,
     crypto
 });
 
