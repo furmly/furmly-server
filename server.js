@@ -923,10 +923,11 @@ uploadRouter.get("/preview/:id", function(req, res) {
     });
 });
 
-downloadRouter.get("/download/:id", function(req, res) {
+downloadRouter.get("/:id", function(req, res) {
     fileUpload.readFile(req.params.id, function(er, data, description) {
         if (er) return sendResponse.call(res, er);
-
+         
+        debug(description);
         res.append("Content-Type", description.mime);
         res.append(
             "Content-Disposition",
