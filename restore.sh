@@ -6,5 +6,5 @@ else
 fi
 for var in "$@"
 do
-     "${_MONGO_HOME}/mongorestore.exe" --db "${var}" "./db_$var/$var"
+     "${_MONGO_HOME}/mongorestore.exe" --nsInclude "${var}.*" "./db_$var"
 done
