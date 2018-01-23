@@ -1,0 +1,14 @@
+{
+	"apps": [
+		{
+			"script": "./server.js",
+			"name": "dynamo_webserver",
+			"instances": 1,
+			"exec_mode": "fork_mode",
+			"env": {
+				"NODE_ENV": "dev",
+				"DEBUG":"*"
+			}
+		}
+	]
+}
