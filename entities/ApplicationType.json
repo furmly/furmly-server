@@ -1,0 +1,1 @@
+{"name":{"type":"String"},"amount":{"type":"Number"},"teneceCommission":{"type":"Number"},"domain":{"type":"ObjectId"},"uid":{"type":"String","unique":true,"sparse":true},"isActive":{"type":"Boolean","default":true}}

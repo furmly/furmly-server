@@ -1,1 +1,15 @@
-process.test.json
+{
+	"apps": [
+		{
+			"script": "./server.js",
+			"name": "dynamo_webserver_test",
+			"instances": 1,
+			"exec_mode": "fork_mode",
+			"env": {
+				"NODE_ENV": "",
+				"profile": "test",
+				"DEBUG": "*"
+			}
+		}
+	]
+}
