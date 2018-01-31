@@ -1,1 +1,1 @@
-{"name":{"type":"String","required":true}}
+{"name":{"type":"String","required":true},"lgas":[{"name":{"type":"String","required":true}}]}

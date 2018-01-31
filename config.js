@@ -39,7 +39,7 @@ module.exports = {
 			ttl: 50000
 		},
 		entRepo: {
-			storeTTL: 600
+			storeTTL: 600000
 		},
 		userManager: {
 			tokenTTL: 86400

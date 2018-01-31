@@ -108,18 +108,28 @@ function verify(req, res, next) {
         {
             session: false
         },
-        function(er, user) {
+        (er, user) => {
             if (er) {
                 sendResponse.call(res, er);
                 return;
             }
             debug(user || "user is null");
             if (user) return (req.user = user), next();
-
+            if (VerificationOverride.prototype.isPrototypeOf(this))
+                return (
+                    debug("verification has been overriden"),
+                    this.verify(req, res, next)
+                );
             return unauthorized(req, res);
         }
     )(req, res, next);
 }
+function VerificationOverride(fn) {
+    this.fn = fn;
+}
+VerificationOverride.prototype.verify = function(req, res, next) {
+    return this.fn(req, res, next);
+};
 
 function verifyIfRequired(getItem, req, res, next) {
     debug("checking if identity is required...");
@@ -916,7 +926,11 @@ uploadRouter.post("/", [
 ]);
 
 uploadRouter.get("/preview/:id", function(req, res) {
-    fileUpload.readFile(req.params.id, function(er, data, description) {
+    fileUpload.readFile(req.params.id, req.user, function(
+        er,
+        data,
+        description
+    ) {
         if (er) return sendResponse.call(res, er);
 
         fileParser.parse(description, data, res, req);
@@ -926,7 +940,7 @@ uploadRouter.get("/preview/:id", function(req, res) {
 downloadRouter.get("/:id", function(req, res) {
     fileUpload.readFile(req.params.id, function(er, data, description) {
         if (er) return sendResponse.call(res, er);
-         
+
         debug(description);
         res.append("Content-Type", description.mime);
         res.append(
@@ -941,7 +955,11 @@ app.use(function(req, res, next) {
     res.set("Cache-Control", "no-cache");
     next();
 });
-app.use("/api/upload", [verify, uploadRouter]);
+app.use("/api/upload", [
+    //check if user is logged in. If he's not still let him pass.
+    verify.bind(new VerificationOverride((req, res, next) => next())),
+    uploadRouter
+]);
 app.use("/api/download", [verify, downloadRouter]);
 app.use("/api/process", [processes]);
 app.use("/api/processors", [processors]);
