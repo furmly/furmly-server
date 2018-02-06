@@ -130,7 +130,20 @@ function VerificationOverride(fn) {
 VerificationOverride.prototype.verify = function(req, res, next) {
     return this.fn(req, res, next);
 };
-
+function ensureProcessorCanRunStandalone(req, res, next) {
+    if (!req.processor || !req.processor.standalone) {
+        return (
+            debug("processor cannot run standalone"),
+            debug(req.processor),
+            sendResponse.call(
+                res,
+                new Error("That action requires the proper context to run"),
+                400
+            )
+        );
+    }
+    return next();
+}
 function verifyIfRequired(getItem, req, res, next) {
     debug("checking if identity is required...");
     var item = getItem(req);
@@ -902,6 +915,7 @@ processes.post("/run/:id", [
 ]);
 
 processors.use("/run/:id", [
+    ensureProcessorCanRunStandalone,
     verifyProcessorIfRequired,
     ensureHasProcessorClaim,
     function(req, res) {
