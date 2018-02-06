@@ -199,14 +199,21 @@ function checkClaim(type, value, failed, req, res, next) {
     if (failed) return failed(type, _value, req, res, next);
     unauthorized(req, res);
 }
-
+function removeNonASCIICharacters(str) {
+    return str.replace(
+        /[^A-Za-z 0-9 \.,\?""!@#\$%\^&\*\(\)-_=\+;:<>\/\\\|\}\{\[\]`~]*/g,
+        ""
+    );
+}
 function sendResponse(er, result, resultType) {
+    let errorMessage =
+        er && removeNonASCIICharacters(er.message || "Unknown Error occurred");
     if (er)
         return (
             debug(er),
             this.status(500),
-            this.append("ErrorMessage", er.message),
-            (this.statusMessage = er.message || "Unknown Error occurred"),
+            this.append("ErrorMessage", errorMessage),
+            (this.statusMessage = errorMessage),
             this.send({
                 error:
                     "An unknown error occurred. We' have to find out why. In the meantime try a refresh.",
