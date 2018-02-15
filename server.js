@@ -11,7 +11,7 @@ var express = require("express"),
     passport = require("passport"),
     oauth2orize = require("oauth2orize"),
     passport_auth = require("./lib/passport_auth"),
-    auth = require("./lib/auth"),
+    lib = require("./lib/index"),
     passport = require("passport"),
     request = require("request"),
     multer = require("multer"),
@@ -28,7 +28,7 @@ var express = require("express"),
     morgan = require("morgan"),
     threadPool = new (require("./lib/worker"))(
         (config.threadPool && config.threadPool.size) ||
-            require("os").cpus().length
+            require("os").cpus().length - 1
     ),
     admin = express.Router(),
     uploadRouter = express.Router(),
@@ -46,18 +46,18 @@ var express = require("express"),
 //debug(config.clients);
 mongoose.Promise = global.Promise;
 let conn = mongoose.createConnection(config.data.web_url),
-    userManager = new auth.UserManager({
-        domainStore: new auth.DomainStore(mongoose, conn),
-        userStore: new auth.UserStore(mongoose, conn),
-        clientStore: new auth.ClientStore(mongoose, conn),
-        roleStore: new auth.RoleStore(mongoose, conn),
-        claimsStore: new auth.ClaimsStore(mongoose, conn),
-        tokenGen: new auth.TokenGenerator(config.token_generator),
-        menuStore: new auth.MenuStore(mongoose, conn),
+    userManager = new lib.UserManager({
+        domainStore: new lib.DomainStore(mongoose, conn),
+        userStore: new lib.UserStore(mongoose, conn),
+        clientStore: new lib.ClientStore(mongoose, conn),
+        roleStore: new lib.RoleStore(mongoose, conn),
+        claimsStore: new lib.ClaimsStore(mongoose, conn),
+        tokenGen: new lib.TokenGenerator(config.token_generator),
+        menuStore: new lib.MenuStore(mongoose, conn),
         defaultClaims: {
             manage_default_process: "manage-default-process",
             create_process: {
-                type: auth.UserManager.constants.CLAIMS.PROCESS,
+                type: lib.UserManager.constants.CLAIMS.PROCESS,
                 description: "Edit a process",
                 value: "CREATE_PROCESS"
             }
@@ -368,7 +368,7 @@ function _init() {
             async.waterfall(
                 [
                     userManager.saveClaim.bind(userManager, {
-                        type: auth.UserManager.constants.CLAIMS.PROCESS,
+                        type: lib.UserManager.constants.CLAIMS.PROCESS,
                         description: proc.title,
                         value: proc._id
                     }),
@@ -418,7 +418,7 @@ function _init() {
         dynamoEngine.on("default-processor-created", function(proc) {
             userManager.saveClaim(
                 {
-                    type: auth.UserManager.constants.CLAIMS.PROCESSOR,
+                    type: lib.UserManager.constants.CLAIMS.PROCESSOR,
                     description: proc.title,
                     value: proc._id
                 },
@@ -447,13 +447,13 @@ function _init() {
 
 var ensureHasProcessClaim = checkClaim.bind(
         null,
-        auth.UserManager.constants.CLAIMS.PROCESS,
+        lib.UserManager.constants.CLAIMS.PROCESS,
         checkId,
         checkIfClaimIsRequired
     ),
     ensureHasProcessorClaim = checkClaim.bind(
         null,
-        auth.UserManager.constants.CLAIMS.PROCESSOR,
+        lib.UserManager.constants.CLAIMS.PROCESSOR,
         checkId,
         checkIfClaimIsRequired
     ),
