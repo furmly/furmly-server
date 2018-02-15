@@ -46,7 +46,7 @@ var express = require("express"),
 //debug(config.clients);
 mongoose.Promise = global.Promise;
 let conn = mongoose.createConnection(config.data.web_url),
-    userManager = new lib.UserManager({
+    infrastructure = new lib.Infrastructure({
         domainStore: new lib.DomainStore(mongoose, conn),
         userStore: new lib.UserStore(mongoose, conn),
         clientStore: new lib.ClientStore(mongoose, conn),
@@ -57,14 +57,19 @@ let conn = mongoose.createConnection(config.data.web_url),
         defaultClaims: {
             manage_default_process: "manage-default-process",
             create_process: {
-                type: lib.UserManager.constants.CLAIMS.PROCESS,
+                type: lib.Infrastructure.constants.CLAIMS.PROCESS,
                 description: "Edit a process",
                 value: "CREATE_PROCESS"
             }
         },
         webClient: config.clients.web,
         mobileClient: config.clients.mobile,
-        config: config.userManager
+        config:
+            (config.userManager &&
+                debug(
+                    "use infrastructure property , userManager is deprecated"
+                ),
+            config.userManager) || config.infrastructure
     }),
     fileUpload = new (require("./lib/file_upload"))(
         config.fileUpload,
@@ -73,7 +78,7 @@ let conn = mongoose.createConnection(config.data.web_url),
     );
 
 dynamoEngine.setInfrastructure({
-    userManager,
+    userManager: infrastructure,
     fileParser,
     fileUpload,
     threadPool,
@@ -164,7 +169,7 @@ function verifyIfRequired(getItem, req, res, next) {
 }
 
 function getDomain(req, fn) {
-    userManager.getDomains({ _id: req.user.domain }, (er, domains) => {
+    infrastructure.getDomains({ _id: req.user.domain }, (er, domains) => {
         if (er) return fn(er);
         if (domains.length) {
             req._domain = domains[0];
@@ -332,7 +337,7 @@ function createContext(req) {
 }
 
 function checkIfClaimIsRequired(type, value, req, res, next) {
-    userManager.getClaims(
+    infrastructure.getClaims(
         {
             type: type,
             value: value(req)
@@ -355,7 +360,7 @@ function _init() {
         if (title.indexOf("create") !== -1) return "developer_board";
         if (title.indexOf("process") !== -1) return "memory";
     }
-    userManager.init(config.admin.username, config.admin.password, function(
+    infrastructure.init(config.admin.username, config.admin.password, function(
         er
     ) {
         if (er) throw er;
@@ -365,26 +370,27 @@ function _init() {
         });
         dynamoEngine.on("default-process-created", function(proc) {
             //apply for all the claims required in this process.
+            debugger;
             async.waterfall(
                 [
-                    userManager.saveClaim.bind(userManager, {
-                        type: lib.UserManager.constants.CLAIMS.PROCESS,
+                    infrastructure.saveClaim.bind(infrastructure, {
+                        type: lib.Infrastructure.constants.CLAIMS.PROCESS,
                         description: proc.title,
                         value: proc._id
                     }),
                     function(result) {
                         var args = Array.prototype.slice.call(arguments);
                         var callback = args[args.length - 1];
-                        userManager.addClaimToRole(
-                            userManager.defaultRole,
+                        infrastructure.addClaimToRole(
+                            infrastructure.defaultRole,
                             null,
                             result,
                             function(er, role) {
                                 if (er) throw er;
-                                userManager.getClaims(
+                                infrastructure.getClaims(
                                     {
                                         type:
-                                            userManager.adminClaims
+                                            infrastructure.adminClaims
                                                 .manage_default_process
                                     },
                                     callback
@@ -393,7 +399,7 @@ function _init() {
                         );
                     },
                     function(result, callback) {
-                        userManager.saveMenu(
+                        infrastructure.saveMenu(
                             {
                                 displayLabel: proc.title,
                                 group: "Configuration",
@@ -404,7 +410,8 @@ function _init() {
                                 type: "DYNAMO",
                                 value: proc._id,
                                 category: "MAINMENU",
-                                client: userManager.webClient.clientId
+                                client: infrastructure.webClient.clientId,
+                                activated:true
                             },
                             callback
                         );
@@ -416,22 +423,22 @@ function _init() {
             );
         });
         dynamoEngine.on("default-processor-created", function(proc) {
-            userManager.saveClaim(
+            infrastructure.saveClaim(
                 {
-                    type: lib.UserManager.constants.CLAIMS.PROCESSOR,
+                    type: lib.Infrastructure.constants.CLAIMS.PROCESSOR,
                     description: proc.title,
                     value: proc._id
                 },
                 function(er, claim) {
-                    userManager.addClaimToRole(
-                        userManager.defaultRole,
+                    infrastructure.addClaimToRole(
+                        infrastructure.defaultRole,
                         null,
                         claim,
                         function(er, role) {
                             if (er)
                                 debug(
                                     "an error occurred while adding claim to role:" +
-                                        userManager.defaultRole
+                                        infrastructure.defaultRole
                                 );
                         }
                     );
@@ -447,13 +454,13 @@ function _init() {
 
 var ensureHasProcessClaim = checkClaim.bind(
         null,
-        lib.UserManager.constants.CLAIMS.PROCESS,
+        lib.Infrastructure.constants.CLAIMS.PROCESS,
         checkId,
         checkIfClaimIsRequired
     ),
     ensureHasProcessorClaim = checkClaim.bind(
         null,
-        lib.UserManager.constants.CLAIMS.PROCESSOR,
+        lib.Infrastructure.constants.CLAIMS.PROCESSOR,
         checkId,
         checkIfClaimIsRequired
     ),
@@ -474,7 +481,7 @@ server.exchange(
         scope,
         done
     ) {
-        userManager.login(
+        infrastructure.login(
             scope.length ? scope[0] : null,
             client,
             username,
@@ -491,7 +498,7 @@ server.exchange(
         scope,
         done
     ) {
-        userManager.refreshToken(
+        infrastructure.refreshToken(
             scope.length ? scope[0] : null,
             client,
             refreshToken,
@@ -499,7 +506,7 @@ server.exchange(
         );
     })
 );
-passport_auth.init(userManager);
+passport_auth.init(infrastructure);
 app.use(_clientAuthentication);
 app.use(passport.initialize());
 app.use("/auth/token", [
@@ -511,7 +518,11 @@ app.use("/auth/token", [
 ]);
 admin.get("/claimable", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_claims,
+        emptyVal
+    ),
     function(req, res) {
         dynamoEngine.queryProcessor(
             {},
@@ -549,55 +560,79 @@ admin.get("/claimable", [
 
 admin.post("/user", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_users, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_users,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.register(req.body, sendResponse.bind(res));
+        infrastructure.register(req.body, sendResponse.bind(res));
     }
 ]);
 
 admin.post("/user/edit", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_users, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_users,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.updateUser(req.body, sendResponse.bind(res));
+        infrastructure.updateUser(req.body, sendResponse.bind(res));
     }
 ]);
 admin.post("/role", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_roles, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_roles,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.createRole(req.body, sendResponse.bind(res));
+        infrastructure.createRole(req.body, sendResponse.bind(res));
     }
 ]);
 admin.post("/role/edit", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_roles, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_roles,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.updateRole(req.body, sendResponse.bind(res));
+        infrastructure.updateRole(req.body, sendResponse.bind(res));
     }
 ]);
 admin.post("/claim", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_claims,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.saveClaim(req.body, sendResponse.bind(res));
+        infrastructure.saveClaim(req.body, sendResponse.bind(res));
     }
 ]);
 
 admin.delete("/claim/:id", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_claims,
+        emptyVal
+    ),
     function(req, res) {
         debug(req.params);
-        userManager.deleteClaim(req.params.id, sendResponse.bind(res));
+        infrastructure.deleteClaim(req.params.id, sendResponse.bind(res));
     }
 ]);
 
 admin.post("/menu", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_menu, emptyVal),
+    checkClaim.bind(null, infrastructure.adminClaims.can_manage_menu, emptyVal),
     function(req, res) {
-        userManager.saveMenu(req.body, sendResponse.bind(res));
+        infrastructure.saveMenu(req.body, sendResponse.bind(res));
     }
 ]);
 
@@ -605,7 +640,8 @@ admin.get("/acl", [
     function(req, res) {
         if (req.headers.authorization) {
             verify(req, res, function() {
-                userManager.acl(
+                debugger;
+                infrastructure.acl(
                     req.user.username,
                     req.user.domain,
                     req.user.client.clientId,
@@ -657,7 +693,7 @@ admin.get("/acl", [
                     )
                 );
             }
-            userManager.externalAcl(
+            infrastructure.externalAcl(
                 query.domain,
                 query.clientId,
                 query.category,
@@ -669,9 +705,13 @@ admin.get("/acl", [
 
 admin.get("/user", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_users, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_users,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.getUserRange(
+        infrastructure.getUserRange(
             Object.assign(
                 {},
                 (req.query.domain && { domain: req.query.domain }) || {},
@@ -689,18 +729,29 @@ admin.get("/user", [
 
 admin.get("/user/byid/:id", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_users, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_users,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.getUserById({ _id: req.params.id }, sendResponse.bind(res));
+        infrastructure.getUserById(
+            { _id: req.params.id },
+            sendResponse.bind(res)
+        );
     }
 ]);
 
 admin.get("/role", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_roles, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_roles,
+        emptyVal
+    ),
     function(req, res) {
         if (!req.query.all)
-            return userManager.getRoleRange(
+            return infrastructure.getRoleRange(
                 Object.assign(
                     (req.query.domain && { domain: req.query.domain }) || {},
                     (req.query.name && { name: toRegex(req.query.name) }) || {},
@@ -710,37 +761,49 @@ admin.get("/role", [
                 sendResponse.bind(res)
             );
 
-        userManager.getRoles({}, sendResponse.bind(res));
+        infrastructure.getRoles({}, sendResponse.bind(res));
     }
 ]);
 admin.get("/role/:id", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_roles, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_roles,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.getRole(req.params.id, sendResponse.bind(res));
+        infrastructure.getRole(req.params.id, sendResponse.bind(res));
     }
 ]);
 
 admin.get("/menu/:id", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_menu, emptyVal),
+    checkClaim.bind(null, infrastructure.adminClaims.can_manage_menu, emptyVal),
     function(req, res) {
-        userManager.getMenu(req.params.id, sendResponse.bind(res));
+        infrastructure.getMenu(req.params.id, sendResponse.bind(res));
     }
 ]);
 admin.get("/claim", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_claims,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.getClaims({}, sendResponse.bind(res));
+        infrastructure.getClaims({}, sendResponse.bind(res));
     }
 ]);
 
 admin.get("/claim/paged", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_claims, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_claims,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.getClaimRange(
+        infrastructure.getClaimRange(
             Object.assign(
                 (req.query.description && {
                     description: toRegex(req.query.description)
@@ -756,25 +819,37 @@ admin.get("/claim/paged", [
 
 admin.post("/domain", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_domains, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_domains,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.saveDomain(req.body, sendResponse.bind(res));
+        infrastructure.saveDomain(req.body, sendResponse.bind(res));
     }
 ]);
 
 admin.get("/domain", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_domains, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_domains,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.getDomains({}, sendResponse.bind(res));
+        infrastructure.getDomains({}, sendResponse.bind(res));
     }
 ]);
 
 admin.get("/domain/paged", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_domains, emptyVal),
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_domains,
+        emptyVal
+    ),
     function(req, res) {
-        userManager.getDomainRange(
+        infrastructure.getDomainRange(
             Object.assign(
                 (req.query.name && { name: toRegex(req.query.name) }) || {},
                 getRangeQuery(req)
@@ -787,9 +862,9 @@ admin.get("/domain/paged", [
 
 admin.get("/menu", [
     verify,
-    checkClaim.bind(null, userManager.adminClaims.can_manage_menu, emptyVal),
+    checkClaim.bind(null, infrastructure.adminClaims.can_manage_menu, emptyVal),
     function(req, res) {
-        userManager.getMenuRange(
+        infrastructure.getMenuRange(
             Object.assign(
                 (req.query.title && {
                     displayLabel: toRegex(req.query.title)
