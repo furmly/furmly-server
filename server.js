@@ -46,7 +46,7 @@ var express = require("express"),
 //debug(config.clients);
 mongoose.Promise = global.Promise;
 let conn = mongoose.createConnection(config.data.web_url),
-    infrastructure = new lib.Infrastructure({
+    infrastructureParams = {
         domainStore: new lib.DomainStore(mongoose, conn),
         userStore: new lib.UserStore(mongoose, conn),
         clientStore: new lib.ClientStore(mongoose, conn),
@@ -67,16 +67,32 @@ let conn = mongoose.createConnection(config.data.web_url),
         config:
             (config.userManager &&
                 debug(
-                    "use infrastructure property , userManager is deprecated"
+                    "use infrastructure property , userManager is [deprecated]"
                 ),
             config.userManager) || config.infrastructure
-    }),
+    },
     fileUpload = new (require("./lib/file_upload"))(
         config.fileUpload,
         mongoose,
         conn
     );
-
+infrastructureParams.migrationStore = new lib.MigrationStore(
+    mongoose,
+    conn,
+    config.migrations,
+    require("./lib/dynamo_migration_item_resolution_strategy")(
+    {
+        domainStore: infrastructureParams.domainStore,
+        userStore: infrastructureParams.userStore,
+        roleStore: infrastructureParams.roleStore,
+        claimsStore: infrastructureParams.claimsStore,
+        menuStore: infrastructureParams.menuStore,
+        clientStore: infrastructureParams.clientStore,
+        dynamoEngine
+    }
+    )
+);
+const infrastructure = new lib.Infrastructure(infrastructureParams);
 dynamoEngine.setInfrastructure({
     userManager: infrastructure,
     fileParser,
@@ -411,7 +427,7 @@ function _init() {
                                 value: proc._id,
                                 category: "MAINMENU",
                                 client: infrastructure.webClient.clientId,
-                                activated:true
+                                activated: true
                             },
                             callback
                         );
@@ -558,6 +574,18 @@ admin.get("/claimable", [
     }
 ]);
 
+admin.post("/migration", [
+    verify,
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_migrations,
+        emptyVal
+    ),
+    function(req, res) {
+        infrastructure.saveMigration(req.body, sendResponse.bind(res));
+    }
+]);
+
 admin.post("/user", [
     verify,
     checkClaim.bind(
@@ -700,6 +728,112 @@ admin.get("/acl", [
                 sendResponse.bind(res)
             );
         }
+    }
+]);
+
+admin.get("/dynamo/schemas", [
+    verify,
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_migrations,
+        emptyVal
+    ),
+    function(req, res) {
+        dynamoEngine.allEntityConfigurations(true, sendResponse.bind(res));
+    }
+]);
+
+admin.get("/dynamo/entities", [
+    verify,
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_migrations,
+        emptyVal
+    ),
+    function(req, res) {
+        let query = getRangeQuery(req);
+        if (req.query._id) query._id = req.query._id;
+        dynamoEngine.query(
+            req.query.type,
+            query,
+            {
+                full: true,
+                noTransformaton: true,
+                sort: { updated: 1, _id: -1 },
+                limit: (req.query.count && parseInt(req.query.count)) || 10
+            },
+            (er, items) => {
+                if (er) return sendResponse.call(res, er);
+                dynamoEngine.count(req.query.type, {}, (er, count) => {
+                    if (er) return sendResponse.call(res, er);
+
+                    return sendResponse.call(res, null, {
+                        items,
+                        total: count
+                    });
+                });
+            }
+        );
+    }
+]);
+
+admin.get("/schemas", [
+    verify,
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_migrations,
+        emptyVal
+    ),
+    function(req, res) {
+        infrastructure.getSchemas(sendResponse.bind(res));
+    }
+]);
+
+admin.get("/entities", [
+    verify,
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_migrations,
+        emptyVal
+    ),
+    function(req, res) {
+        let query = getRangeQuery(req);
+        if (req.query._id) query._id = req.query._id;
+        let middle=req.query.type[0].toUpperCase() + req.query.type.substring(1);
+        infrastructure[
+            `get${middle}Range`
+        ](query, parseInt(req.query.count), sendResponse.bind(res));
+    }
+]);
+
+admin.get("/migration", [
+    verify,
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_migrations,
+        emptyVal
+    ),
+    function(req, res) {
+        infrastructure.getMigrationRange(
+            Object.assign({}, getRangeQuery(req)),
+            parseInt(req.query.count),
+            sendResponse.bind(res)
+        );
+    }
+]);
+
+admin.get("/migration/:id", [
+    verify,
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_migrations,
+        emptyVal
+    ),
+    function(req, res) {
+        infrastructure.getMigrationById(
+            { _id: req.params.id },
+            sendResponse.bind(res)
+        );
     }
 ]);
 

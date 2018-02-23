@@ -56,6 +56,7 @@ module.exports = {
             isObjectID(data[key]) ||
             (isObjectID(data) && Array.prototype.isPrototypeOf(parent))
           ) {
+            //debugger;
             let id = { $objectID: (data[key] || data).toString() };
             if (!index) data[key] = id;
             else parent[parentKey][index] = Object.assign(data, { [key]: id });

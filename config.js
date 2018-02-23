@@ -29,6 +29,9 @@ module.exports = {
 			web_url: "mongodb://localhost:27017/dynamo_web",
 			dynamo_url: "mongodb://localhost:27017/dynamo"
 		},
+		migrations:{
+			folder:'../migrations'
+		},
 		processors: {
 			ttl: 165000
 		},

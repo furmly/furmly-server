@@ -10,7 +10,7 @@ describe("Integration Tests", function() {
 	var server,
 		accessToken,
 		domain = mongoose.Types.ObjectId(),
-		total = 10;
+		total = 11;
 	before(function(done) {
 		this.timeout(15000);
 		if (!fs.existsSync(config.fileUpload.tempDir)) {
