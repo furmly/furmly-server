@@ -8,6 +8,9 @@ const mongodb = require("mongodb"),
 	utils = require("./utils"),
 	diff_match_patch = require("./diff_match_patch_u"),
 	dmp = new diff_match_patch.diff_match_patch();
+const isLeft = /\{\$\$left\}/,
+	isRight = /\{\$\$right\}/,
+	isID = /\{\$\$_id\}/;
 
 const isDirectory = source => fs.lstatSync(source).isDirectory();
 const getDirectories = (source, fn) =>
@@ -159,11 +162,12 @@ let serverStarted = false,
 		"</head>" +
 		"<body>" +
 		"<div id='flex-container'>" +
-		"<div><div id='acediff-left-editor' >" +
-		"{left}</div></div>" +
+		"<input id='_id' type='hidden' value='{$$_id}'/>" +
+		"<div><button class='merge-button' onClick='return resolve(\"left\")'>Merge left</button><div id='acediff-left-editor' >" +
+		"{$$left}</div></div>" +
 		"<div id='acediff-gutter'></div>" +
-		"<div><div id='acediff-right-editor' >" +
-		"{right}</div></div>" +
+		"<div><button class='merge-button' onClick='return resolve(\"right\")'>Merge right</button><div id='acediff-right-editor' >" +
+		"{$$right}</div></div>" +
 		"</div>" +
 		'<script src="./ace.js" type="text/javascript" charset="utf-8"></script>' +
 		"<script src='./ace-diff.js' ></script>" +
@@ -187,26 +191,31 @@ function read(stream, fn) {
 	});
 }
 function indexScript() {
+	var editor;
 	$(function() {
-		var editor = new AceDiff({
+		editor = new AceDiff({
 			mode: "ace/mode/javascript",
-			theme: "ace/theme/twilight"
+			theme: "ace/theme/monokai"
 		});
 	});
 
-	function resolve() {
-		var ed = $("#acediff-right-editor");
-		$.ajax({
-			url: "/resolve",
-			method: "POST",
-			success: function(result, status) {
-				location.reload();
-			},
-			error: function() {
-				alert("request failed");
-			},
-			data: { result: ed.text() }
-		});
+	function resolve(selector) {
+		if (window.confirm("Do you want to merge those files ?")) {
+			var ed = editor.editors[selector].ace.getValue();
+			$.ajax({
+				url: "/resolve",
+				method: "POST",
+				contentType: "application/json",
+				success: function(result, status) {
+					location.reload();
+				},
+				error: function() {
+					alert("request failed");
+				},
+				data: JSON.stringify({ result: ed, id: $("#_id").val() })
+			});
+		}
+		return false;
 	}
 }
 function getIndex() {
@@ -214,35 +223,42 @@ function getIndex() {
 		indexClone = "" + index,
 		currentConflicts;
 	if ((currentConflicts = Object.keys(conflicts)).length > 0) {
+		let _c = conflicts[currentConflicts[0]],
+			existing = JSON.stringify(_c.existing, null, " "),
+			imported = JSON.stringify(_c.imported, null, " ");
+
+		if (_c.hasCode && !_c.mergedCode) {
+			existing = _c.existing.code;
+			imported = _c.imported.code;
+		}
+
 		indexClone = indexClone
-			.replace(
-				/\{left\}/,
-				JSON.stringify(
-					conflicts[currentConflicts[0]].imported,
-					null,
-					" "
-				)
-			)
-			.replace(
-				/\{right\}/,
-				JSON.stringify(
-					conflicts[currentConflicts[0]].existing,
-					null,
-					" "
-				)
-			);
+			.replace(isLeft, imported)
+			.replace(isRight, existing)
+			.replace(isID, _c.existing._id.$objectID);
+		return indexClone.replace(
+			/\{indexScript\}/,
+			entire.substring(entire.indexOf("{") + 1, entire.lastIndexOf("}"))
+		);
 	}
-	return indexClone.replace(
-		/\{indexScript\}/,
-		entire.substring(entire.indexOf("{") + 1, entire.lastIndexOf("}"))
-	);
+
+	return "<h2>No more conflicts ...merge in progress</h2>";
 }
 
 function writeJSON(res, json) {
 	res.write(JSON.stringify(json));
 	res.end();
 }
-
+function writeError(res, message) {
+	return (
+		writeHead(500, {
+			"Content-Type": "application/json"
+		}),
+		writeJSON(res, {
+			message
+		})
+	);
+}
 function startConflictServer() {
 	// Create server
 	if (!serverStarted) {
@@ -268,13 +284,27 @@ function startConflictServer() {
 					res.end();
 					break;
 				case "/resolve":
-					read(res, (er, body) => {
-						if (!conflicts[body.result._id])
-							return writeJSON(res, {
-								message:
-									"Cannot find the item you are trying to merge"
-							});
-						conflicts[body.result._id].resolve(body.result);
+					read(req, (er, body) => {
+						if (er)
+							return console.log(er), writeError(res, "failed");
+						let _c = conflicts[body.id];
+						if (!_c)
+							return writeError(
+								res,
+								"Cannot find the item you are trying to merge"
+							);
+						if (_c.hasCode && !_c.mergedCode) {
+							if (typeof body.result !== "string")
+								throw new Error(
+									"Expected string , got something totally different"
+								);
+							_c.mergedCode = true;
+							_c.imported.code = body.result;
+							_c.existing.code = body.result;
+						} else {
+							delete conflicts[body.id];
+							_c.resolve(JSON.parse(body.result));
+						}
 						writeJSON(res, { message: "successful" });
 					});
 					break;
@@ -283,14 +313,16 @@ function startConflictServer() {
 			}
 		});
 		// Listen
-		server.listen(process.env.PORT || 8818);
+		let port = process.env.PORT || 8818;
+		server.listen(port);
+		opn(`http://localhost:${port}/`);
 		serverStarted = true;
 	}
 }
 
 function resolveConflict(imported, existing) {
 	return new Promise((resolve, reject) => {
-		utils.fromObjectID(existing);
+		utils.fromObjectID(existing, u => ObjectID.prototype.isPrototypeOf(u));
 		let diff = dmp.diff_main(
 			JSON.stringify(imported),
 			JSON.stringify(existing)
@@ -300,7 +332,13 @@ function resolveConflict(imported, existing) {
 		if (diff.length == 1 && !diff[0][0]) return resolve();
 
 		startConflictServer();
-		conflicts[imported._id] = { imported, existing, resolve, reject };
+		conflicts[imported._id.$objectID] = {
+			imported,
+			existing,
+			resolve,
+			reject,
+			hasCode: !!imported.code || !!existing.code
+		};
 	});
 }
 
@@ -309,7 +347,75 @@ function noConflict(item) {
 		setImmediate(resolve, item);
 	});
 }
+let tasks = [],
+	ready = {},
+	clients = [];
 
+function runTasks(interval) {
+	setTimeout(function() {
+		let keys = Object.keys(ready),
+			nextInterval = !interval ? 5000 : interval + 1000;
+		if (!keys.length) return runTasks(nextInterval);
+		if (ready.dbs.total !== ready.dbs.read) return runTasks(nextInterval);
+		if (ready.dbs.total + 1 !== keys.length) return runTasks(nextInterval);
+		for (var i = keys.length - 1; i >= 0; i--) {
+			let item = ready[keys[i]];
+			if (item.total !== item.read) return runTasks(nextInterval);
+		}
+
+		Promise.all(tasks.map(x => x.promise))
+			.then(results => {
+				let total = results.filter(x => x).length,
+					done = 0,
+					_close = () => {
+						console.log("finished all tasks");
+						clients.forEach(x => x.close());
+						setImmediate(process.exit, 0);
+					};
+				if (total == done) return _close();
+				results.forEach((result, index) => {
+					if (result) {
+						utils.toObjectID(result, u => new ObjectID(u));
+						let collection = tasks[index].collection;
+						return collection.update(
+							{
+								_id: result._id
+							},
+							{ $set: result },
+							{ upsert: true },
+							er => {
+								if (er)
+									return (
+										console.log(
+											"an error occurred while updating collection " +
+												collection.collectionName
+										),
+										console.log(er),
+										process.exit(1)
+									);
+								done++;
+
+								console.log("successfully updated item");
+
+								if (done == total) {
+									_close();
+								}
+							}
+						);
+					}
+
+					if (done == total) {
+						_close();
+					}
+				});
+			})
+			.catch(e => {
+				console.log("something bad has happened");
+				console.log(e);
+				process.exit(1);
+			});
+	}, interval);
+}
 (function() {
 	getDirectories(path.join(__dirname, "./docs/"), (er, dbs) => {
 		if (er)
@@ -318,9 +424,11 @@ function noConflict(item) {
 				console.log(er),
 				process.exit(1)
 			);
-
+		ready.dbs = { total: dbs.length, read: 0 };
 		dbs.forEach(dbPath => {
-			let dbName = path.basename(dbPath);
+			let dbName = path.basename(dbPath),
+				readyName = "db_" + dbName;
+			ready.dbs.read++;
 			getFiles(dbPath, (er, filePaths) => {
 				if (er)
 					return (
@@ -330,6 +438,7 @@ function noConflict(item) {
 						console.log(er),
 						process.exit(1)
 					);
+				ready[readyName] = { total: filePaths.length, read: 0 };
 				MongoClient.connect(url + dbName, (er, client) => {
 					if (er)
 						return (
@@ -340,6 +449,7 @@ function noConflict(item) {
 							console.log(er),
 							process.exit(1)
 						);
+					clients.push(client);
 					let db = client.db(dbName);
 					filePaths.forEach(filePath => {
 						let collectionName = path.basename(
@@ -355,7 +465,9 @@ function noConflict(item) {
 						collection
 							.find({
 								_id: {
-									$in: toImport.map(x => new ObjectID(x._id))
+									$in: toImport.map(
+										x => new ObjectID(x._id.$objectID)
+									)
 								}
 							})
 							.toArray((er, existing) => {
@@ -373,63 +485,28 @@ function noConflict(item) {
 									return (sum[x._id.toString()] = x), sum;
 								}, {});
 
-								let tasks = [];
 								toImport.forEach(im => {
-									if (existing[im._id]) {
-										return tasks.push(
-											resolveConflict(
+									if (existing[im._id.$objectID]) {
+										return tasks.push({
+											promise: resolveConflict(
 												im,
-												existing[im._id]
-											)
-										);
+												existing[im._id.$objectID]
+											),
+											collection
+										});
 									}
-									tasks.push(noConflict(im));
+									tasks.push({
+										promise: noConflict(im),
+										collection
+									});
 								});
 
-								Promise.all(tasks)
-									.then(results => {
-										results.forEach(result => {
-											if (result) {
-												utils.toObjectID(
-													result,
-													u => new ObjectID(u)
-												);
-												collection.update(
-													{
-														_id: result._id
-													},
-													{ $set: result },
-													{ upsert: true },
-													er => {
-														if (er)
-															return (
-																console.log(
-																	"an error occurred while updating collection " +
-																		collectionName
-																),
-																console.log(er),
-																process.exit(1)
-															);
-
-														console.log(
-															"successfully updated item"
-														);
-													}
-												);
-											}
-										});
-									})
-									.catch(e => {
-										console.log(
-											"something bad has happened"
-										);
-										console.log(e);
-										process.exit(1);
-									});
+								ready[readyName].read++;
 							});
 					});
 				});
 			});
 		});
+		runTasks(0);
 	});
 })();

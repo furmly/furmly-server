@@ -80,8 +80,7 @@ infrastructureParams.migrationStore = new lib.MigrationStore(
     mongoose,
     conn,
     config.migrations,
-    require("./lib/dynamo_migration_item_resolution_strategy")(
-    {
+    require("./lib/dynamo_migration_item_resolution_strategy")({
         domainStore: infrastructureParams.domainStore,
         userStore: infrastructureParams.userStore,
         roleStore: infrastructureParams.roleStore,
@@ -89,8 +88,7 @@ infrastructureParams.migrationStore = new lib.MigrationStore(
         menuStore: infrastructureParams.menuStore,
         clientStore: infrastructureParams.clientStore,
         dynamoEngine
-    }
-    )
+    })
 );
 const infrastructure = new lib.Infrastructure(infrastructureParams);
 dynamoEngine.setInfrastructure({
@@ -258,11 +256,13 @@ function sendResponse(er, result, resultType) {
     this.send(result);
 }
 
-function getRangeQuery(req) {
+function getRangeQuery(req, forceId) {
     var query = req.query.lastId
         ? {
               _id: {
-                  $lt: req.query.lastId
+                  $lt:
+                      (!forceId && req.query.lastId) ||
+                      dynamoEngine.createId(req.query.lastId)
               }
           }
         : {};
@@ -739,7 +739,11 @@ admin.get("/dynamo/schemas", [
         emptyVal
     ),
     function(req, res) {
-        dynamoEngine.allEntityConfigurations(true, sendResponse.bind(res));
+        dynamoEngine.allEntityConfigurations(
+            true,
+            true,
+            sendResponse.bind(res)
+        );
     }
 ]);
 
@@ -751,29 +755,43 @@ admin.get("/dynamo/entities", [
         emptyVal
     ),
     function(req, res) {
-        let query = getRangeQuery(req);
-        if (req.query._id) query._id = req.query._id;
-        dynamoEngine.query(
-            req.query.type,
-            query,
-            {
-                full: true,
-                noTransformaton: true,
+        let query = getRangeQuery(req, true),
+            options = {
                 sort: { updated: 1, _id: -1 },
                 limit: (req.query.count && parseInt(req.query.count)) || 10
             },
-            (er, items) => {
+            _continue = (items, er, count) => {
                 if (er) return sendResponse.call(res, er);
-                dynamoEngine.count(req.query.type, {}, (er, count) => {
+
+                return sendResponse.call(res, null, {
+                    items,
+                    total: count
+                });
+            };
+        if (req.query._id) query._id = dynamoEngine.createId(req.query._id);
+
+        if (req.query.type == "Schema") {
+            return dynamoEngine.allEntityConfigurations(
+                true,
+                false,
+                query,
+                options,
+                (er, items) => {
                     if (er) return sendResponse.call(res, er);
 
-                    return sendResponse.call(res, null, {
-                        items,
-                        total: count
-                    });
-                });
-            }
-        );
+                    dynamoEngine.countConfigurations(
+                        {},
+                        _continue.bind(null, items)
+                    );
+                }
+            );
+        }
+        options.full = true;
+        options.noTransformaton = true;
+        dynamoEngine.query(req.query.type, query, options, (er, items) => {
+            if (er) return sendResponse.call(res, er);
+            dynamoEngine.count(req.query.type, {}, _continue.bind(null, items));
+        });
     }
 ]);
 
@@ -799,10 +817,13 @@ admin.get("/entities", [
     function(req, res) {
         let query = getRangeQuery(req);
         if (req.query._id) query._id = req.query._id;
-        let middle=req.query.type[0].toUpperCase() + req.query.type.substring(1);
-        infrastructure[
-            `get${middle}Range`
-        ](query, parseInt(req.query.count), sendResponse.bind(res));
+        let middle =
+            req.query.type[0].toUpperCase() + req.query.type.substring(1);
+        infrastructure[`get${middle}Range`](
+            query,
+            parseInt(req.query.count),
+            sendResponse.bind(res)
+        );
     }
 ]);
 

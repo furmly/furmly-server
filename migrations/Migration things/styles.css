@@ -13,12 +13,29 @@
     width: 100%;
     overflow: auto;
 }
-#flex-container>div {
+#flex-container > div {
     flex-grow: 1;
     -webkit-flex-grow: 1;
     position: relative;
 }
-#flex-container>div#acediff-gutter {
+.merge-button {
+    z-index: 100000;
+    position: relative;
+    right: 0px;
+    /* display: block; */
+    background-color: #0000001f;
+    color: #6a6a6a4f;
+    border: none;
+    width: 100%;
+    padding: 10px;
+    top: 0px;
+    text-align: center;
+}
+.merge-button:hover{
+    color: #c1c1c1;
+    border: solid 0.5px red;
+}
+#flex-container > div#acediff-gutter {
     flex: 0 0 60px;
     -webkit-flex: 0 0 60px;
     border-left: 1px solid #111111;
