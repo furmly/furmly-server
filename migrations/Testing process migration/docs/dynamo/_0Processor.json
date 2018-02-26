@@ -1,0 +1,1 @@
+[{"_id":{"$objectID":"5a72b60d48dda81fc8cd8f15"},"code":"setImmediate(callback, null, (Object.keys(this.args).length && this.args) || null);\n","title":"Make args initial data for a process","requiresIdentity":true,"__v":0,"standalone":true}]
