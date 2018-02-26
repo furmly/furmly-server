@@ -3,13 +3,14 @@ var chai = require("chai"),
 	fs = require("fs"),
 	config = require("../config")[process.env.profile || "integrationTest"],
 	mongoose = require("mongoose"),
+
 	chaiHttp = require("chai-http");
 chai.use(chaiHttp);
 describe("Integration Tests", function() {
 	var server,
 		accessToken,
-		domain = "http://test.com",
-		total = 8;
+		domain = mongoose.Types.ObjectId(),
+		total = 11;
 	before(function(done) {
 		this.timeout(15000);
 		if (!fs.existsSync(config.fileUpload.tempDir)) {
@@ -71,7 +72,7 @@ describe("Integration Tests", function() {
 							.end(callback);
 					},
 					function(res, callback) {
-						console.log(`created role in domain:${domain}`);
+						// console.log(`created role in domain:${domain}`);
 						assert.equal(res.status, 200);
 						chai
 							.request(server)
@@ -88,7 +89,7 @@ describe("Integration Tests", function() {
 				],
 				function(er, res) {
 					assert.isNull(er);
-					console.log("everything ran successfully");
+					// console.log("everything ran successfully");
 					assert.equal(res.status, 200);
 					assert.isObject(res.body);
 					done();
@@ -98,7 +99,7 @@ describe("Integration Tests", function() {
 	});
 
 	after(function(done) {
-		console.log("after executing...");
+		// console.log("after executing...");
 		var webConn = mongoose.createConnection(config.data.web_url);
 		var dynConn = mongoose.createConnection(config.data.dynamo_url);
 		webConn.dropDatabase(function(er) {
@@ -115,7 +116,7 @@ describe("Integration Tests", function() {
 				.get("/api/admin/acl")
 				.set("Authorization", accessToken)
 				.end(function(err, res) {
-					//console.log()
+					// console.log(res.body);
 					assert.isNull(err);
 					assert.isArray(res.body);
 					assert.equal(res.body.length, total);

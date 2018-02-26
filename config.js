@@ -29,6 +29,9 @@ module.exports = {
 			web_url: "mongodb://localhost:27017/dynamo_web",
 			dynamo_url: "mongodb://localhost:27017/dynamo"
 		},
+		migrations:{
+			folder:'../migrations'
+		},
 		processors: {
 			ttl: 165000
 		},
@@ -85,9 +88,9 @@ module.exports = {
 		processors: {
 			ttl: 165000
 		},
-        entRepo: {
-            storeTTL: 600
-        },
+		entRepo: {
+			storeTTL: 600
+		},
 		log: {
 			server: true
 		},
@@ -132,6 +135,12 @@ module.exports = {
 			ttl: 60000,
 			permDir: "./perm_test",
 			tempDir: "./temp_test"
+		},
+		entRepo: {
+			storeTTL: 600000
+		},
+		userManager: {
+			tokenTTL: 86400
 		},
 		postprocessors: {
 			ttl: 50000
