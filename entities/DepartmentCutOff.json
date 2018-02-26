@@ -1,0 +1,1 @@
+{"domain":{"type":"ObjectId","required":true},"department":{"id":{"type":"ObjectId","required":true},"areaOfSpecialization":{"type":"ObjectId","required":false}},"studentType":{"type":"ObjectId","required":true},"session":{"type":"ObjectId","required":true},"departmentCutOff":{"type":"Number","required":true}}
