@@ -271,7 +271,7 @@ function getRangeQuery(req, forceId) {
 function getMongoQuery(item) {
     return item.split(",").reduce(function(sum, x) {
         var prop_value = x.split("=");
-        sum[prop_value[0]] = prop_value[1];
+        sum[prop_value[0]] = new RegExp(prop_value[1], "i");
         return sum;
     }, {});
 }
@@ -834,6 +834,8 @@ admin.get("/entities", [
         if (req.query._id) query._id = req.query._id;
         if (req.query.filter)
             Object.assign(query, getMongoQuery(req.query.filter));
+
+        debug(query);
         let middle =
             req.query.type[0].toUpperCase() + req.query.type.substring(1);
         infrastructure[`get${middle}Range`](
