@@ -1,0 +1,103 @@
+[{
+    "_id": {
+        "$objectID": "5a95644d9323bc669462029a"
+    },
+    "name": "UNN_Sandwich_Application",
+    "schema": {
+        "invoiceNumber": {
+            "type": "String",
+            "required": true
+        },
+        "personalDetails": {
+            "firstName": {
+                "type": "String"
+            },
+            "middleName": {
+                "type": "String"
+            },
+            "surname": {
+                "type": "String"
+            },
+            "gender": {
+                "type": "ObjectId",
+                "ref": "Gender"
+            },
+            "dob": {
+                "type": "Date"
+            },
+            "maritalStatus": {
+                "type": "String"
+            },
+            "state": {
+                "type": "ObjectId",
+                "ref": "State"
+            },
+            "lga": {
+                "type": "ObjectId"
+            },
+            "permanentAddress": {
+                "type": "String"
+            },
+            "email": {
+                "type": "String"
+            },
+            "mobile": {
+                "type": "String"
+            },
+            "passport": {
+                "type": "String"
+            },
+            "mailingAddress": {
+                "type": "String"
+            }
+        },
+        "nextOfKin": {
+            "type": "Mixed"
+        },
+        "oLevel": {
+            "sittings": [{
+                "year": {
+                    "type": "Date"
+                },
+                "type": {
+                    "type": "String"
+                },
+                "examNumber": {
+                    "type": "String"
+                },
+                "subjects": [{
+                    "subject": {
+                        "type": "ObjectId",
+                        "ref": "OLevelSubject"
+                    },
+                    "grade": {
+                        "type": "ObjectId",
+                        "ref": "OLevelGrade"
+                    }
+                }]
+            }]
+        },
+        "employment": {
+            "history": [{
+                "reason": {
+                    "type": "String"
+                },
+                "employer": {
+                    "type": "String"
+                },
+                "departure": {
+                    "type": "Date"
+                },
+                "position": {
+                    "type": "String"
+                }
+            }]
+        },
+        "created": {
+            "type": "Date"
+        },
+        "updated": {
+            "type": "Date"
+        }
+    }
+}]
