@@ -268,6 +268,13 @@ function getRangeQuery(req, forceId) {
         : {};
     return query;
 }
+function getMongoQuery(item) {
+    return item.split(",").reduce(function(sum, x) {
+        var prop_value = x.split("=");
+        sum[prop_value[0]] = new RegExp(prop_value[1], "i");
+        return sum;
+    }, {});
+}
 function toRegex(string) {
     return new RegExp(string, "i");
 }
@@ -756,8 +763,9 @@ admin.get("/dynamo/entities", [
     ),
     function(req, res) {
         let query = getRangeQuery(req, true),
+            _filter,
             options = {
-                sort: { updated: 1, _id: -1 },
+                sort: { _id: -1 },
                 limit: (req.query.count && parseInt(req.query.count)) || 10
             },
             _continue = (items, er, count) => {
@@ -770,6 +778,9 @@ admin.get("/dynamo/entities", [
             };
         if (req.query._id) query._id = dynamoEngine.createId(req.query._id);
 
+        if (req.query.filter)
+            Object.assign(query, (_filter = getMongoQuery(req.query.filter)));
+
         if (req.query.type == "Schema") {
             return dynamoEngine.allEntityConfigurations(
                 true,
@@ -780,7 +791,7 @@ admin.get("/dynamo/entities", [
                     if (er) return sendResponse.call(res, er);
 
                     dynamoEngine.countConfigurations(
-                        {},
+                        _filter || {},
                         _continue.bind(null, items)
                     );
                 }
@@ -790,7 +801,11 @@ admin.get("/dynamo/entities", [
         options.noTransformaton = true;
         dynamoEngine.query(req.query.type, query, options, (er, items) => {
             if (er) return sendResponse.call(res, er);
-            dynamoEngine.count(req.query.type, {}, _continue.bind(null, items));
+            dynamoEngine.count(
+                req.query.type,
+                _filter || {},
+                _continue.bind(null, items)
+            );
         });
     }
 ]);
@@ -817,6 +832,10 @@ admin.get("/entities", [
     function(req, res) {
         let query = getRangeQuery(req);
         if (req.query._id) query._id = req.query._id;
+        if (req.query.filter)
+            Object.assign(query, getMongoQuery(req.query.filter));
+
+        debug(query);
         let middle =
             req.query.type[0].toUpperCase() + req.query.type.substring(1);
         infrastructure[`get${middle}Range`](

@@ -52,13 +52,20 @@ module.exports = {
     runThroughObj(
       [
         (key, data, result, parent, parentKey, index) => {
+          let _id, onObject;
+          if (key == "$objectID") return;
           if (
-            isObjectID(data[key]) ||
-            (isObjectID(data) && Array.prototype.isPrototypeOf(parent))
+            (isObjectID(data[key]) &&
+              (_id = data[key].toString()) &&
+              (onObject = true)) ||
+            (isObjectID(data) &&
+              parent &&
+              Array.prototype.isPrototypeOf(parent[parentKey]) &&
+              (_id = data.toString()))
           ) {
-            let id = { $objectID: (data[key] || data).toString() };
-            if (!index) data[key] = id;
-            else parent[parentKey][index] = Object.assign(data, { [key]: id });
+            let id = { $objectID: _id };
+            if (!index || onObject) data[key] = id;
+            else parent[parentKey][index] = id;
           }
         }
       ],
@@ -72,7 +79,7 @@ module.exports = {
           if (key == "$objectID") {
             let id = objectID(data[key]);
             if (!index) parent[parentKey] = id;
-            else parent[parentKey][index] = Object.assign(data, { [key]: id });
+            else parent[parentKey][index] = id;
           }
         }
       ],
