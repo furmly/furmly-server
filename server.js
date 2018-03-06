@@ -109,7 +109,7 @@ app.use(
         }
     })
 );
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit:'5mb'}));
 
 function unauthorized(req, res) {
     let msg = "You are not authorized";
