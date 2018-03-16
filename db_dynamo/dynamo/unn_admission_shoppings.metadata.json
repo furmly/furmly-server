@@ -1,1 +1,1 @@
-{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo.unn_admission_shoppings"}]}
+{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo.unn_admission_shoppings"}],"uuid":"6d3cb05ad2e043369ff06c91641b5bbe"}

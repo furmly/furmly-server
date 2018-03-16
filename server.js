@@ -109,7 +109,7 @@ app.use(
         }
     })
 );
-app.use(bodyParser.json({limit:'5mb'}));
+app.use(bodyParser.json({ limit: "5mb" }));
 
 function unauthorized(req, res) {
     let msg = "You are not authorized";
@@ -162,6 +162,30 @@ function ensureProcessorCanRunStandalone(req, res, next) {
         );
     }
     return next();
+}
+function ensureProcessContext(req, res, next) {
+    debug(
+        `requiresIdentity:${req.process
+            .requiresIdentity} userContext:${req.user} ClaimNotRequired:${req._claimNotRequired}`
+    );
+    if (
+        !req.process.requiresIdentity &&
+        req.headers.authorization &&
+        req._claimNotRequired
+    ) {
+        return (
+            debug(
+                "Process does not require a context and does not have a claim but one is provided"
+            ),
+            debug(req.process),
+            sendResponse.call(
+                res,
+                new Error("You may need to logout to continue"),
+                400
+            )
+        );
+    }
+    next();
 }
 function verifyIfRequired(getItem, req, res, next) {
     debug("checking if identity is required...");
@@ -237,13 +261,13 @@ function removeNonASCIICharacters(str) {
         ""
     );
 }
-function sendResponse(er, result, resultType) {
+function sendResponse(er, result) {
     let errorMessage =
         er && removeNonASCIICharacters(er.message || "Unknown Error occurred");
     if (er)
         return (
             debug(er),
-            this.status(500),
+            this.status((typeof result == "number" && result) || 500),
             this.append("ErrorMessage", errorMessage),
             (this.statusMessage = errorMessage),
             this.send({
@@ -369,6 +393,7 @@ function checkIfClaimIsRequired(type, value, req, res, next) {
             if (er) return unauthorized(req, res);
             if (result.length) return unauthorized(req, res);
             debug("a claim is not required for this request");
+            req._claimNotRequired = true;
             next();
         }
     );
@@ -725,7 +750,8 @@ admin.get("/acl", [
                     res,
                     new Error(
                         `missing parameters , kindly ensure category is set`
-                    )
+                    ),
+                    401
                 );
             }
             infrastructure.externalAcl(
@@ -1124,6 +1150,7 @@ processes.param("id", function(req, res, next, id) {
 processes.get("/describe/:id", [
     verifyProcessIfRequired,
     ensureHasProcessClaim,
+    ensureProcessContext,
     function(req, res) {
         const describe = () =>
             req.process.describe(
@@ -1149,6 +1176,7 @@ processes.get("/describe/:id", [
 processes.post("/run/:id", [
     verifyProcessIfRequired,
     ensureHasProcessClaim,
+    ensureProcessContext,
     function(req, res) {
         const send = () =>
             req.process.run(createContext(req), sendResponse.bind(res));

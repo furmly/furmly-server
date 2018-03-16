@@ -1,1 +1,1 @@
-{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo.courseassignments"}]}
+{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo.courseassignments"}],"uuid":"8dbe6ba65d0f4b59a217f892ac847dea"}
