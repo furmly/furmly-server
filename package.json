@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "set profile=integrationTest&& mocha --require test-helpers/chai.js",
-    "test:debug":"set profile=integrationTest&& mocha --debug-brk --inspect --require test-helpers/chai.js"
+    "test:debug": "set profile=integrationTest&& mocha --debug-brk --inspect --require test-helpers/chai.js"
   },
   "keywords": [
     "Dynamo"
@@ -20,7 +20,7 @@
     "express": "^4.15.3",
     "fs-extra": "^5.0.0",
     "jsonwebtoken": "^7.4.1",
-    "mongoose": "^4.10.7",
+    "mongoose": "^4.13.12",
     "morgan": "^1.8.2",
     "multer": "^1.3.0",
     "oauth2orize": "^1.8.0",
