@@ -1,1 +1,1 @@
-{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo.olevelsubjects"}],"uuid":"74cb38b0873a4d54b9c571750ec8bc38"}
+{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo.olevelsubjects"}]}

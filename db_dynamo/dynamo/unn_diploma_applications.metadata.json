@@ -1,1 +1,1 @@
-{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo.unn_diploma_applications"}],"uuid":"6992bc5e3f3745269017f6d302362988"}
+{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo.unn_diploma_applications"}]}
