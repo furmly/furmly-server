@@ -1,0 +1,15 @@
+{
+  "name": "migration_script",
+  "version": "1.0.0",
+  "description": "Used to migrate objects",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Chidi Onuekwusi",
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "^3.0.2",
+    "opn": "^5.2.0"
+  }
+}
