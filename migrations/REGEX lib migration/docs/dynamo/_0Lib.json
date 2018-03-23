@@ -1,0 +1,1 @@
+[{"_id":{"$objectID":"5a6dbc464d6e022d3487d646"},"code":"exports = {\n  phone: \"^\\\\+*\\\\d{11,12}$\",\n  alphanumeric: \"^[\\\\d\\\\w]+$\",\n  email: \"^[^\\\\s@]+@[^\\\\s@]+.[^\\\\s@]+$\",\n  jambNumber: \"^\\\\d{6,6}[a-zA-Z]{2}$\"\n};\n","uid":"REGEX","__v":0}]
