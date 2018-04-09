@@ -1,0 +1,1 @@
+the claim in GetCourses processor was deleted but could not be migrated. So it should be deleted on the server
