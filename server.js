@@ -1080,9 +1080,16 @@ admin.get("/menu", [
 
 processors.param("id", function(req, res, next, id) {
     debug("fetching processor " + id);
-    let query = {};
-    if (dynamoEngine.isValidID(id)) query._id = id;
-    else query.uid = id;
+    var query = {
+        $or: [
+            {
+                _id: { $in: [id] }
+            },
+            {
+                uid: id
+            }
+        ]
+    };
     debug(query);
     dynamoEngine.queryProcessor(
         query,
@@ -1115,9 +1122,17 @@ processors.param("id", function(req, res, next, id) {
 
 processes.param("id", function(req, res, next, id) {
     debug("fetching process");
-    var query = {};
-    if (dynamoEngine.isValidID(id)) query._id = id;
-    else query.uid = id;
+    var query = {
+        $or: [
+            {
+                _id: { $in: [id] }
+            },
+            {
+                uid: id
+            }
+        ]
+    };
+
     dynamoEngine.queryProcess(
         query,
         {
