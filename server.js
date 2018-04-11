@@ -1083,13 +1083,13 @@ processors.param("id", function(req, res, next, id) {
     var query = {
         $or: [
             {
-                _id: { $in: [id] }
-            },
-            {
                 uid: id
             }
         ]
     };
+    if (dynamoEngine.isValidID(id)) {
+        query.$or.push({ _id: id });
+    }
     debug(query);
     dynamoEngine.queryProcessor(
         query,
@@ -1125,14 +1125,14 @@ processes.param("id", function(req, res, next, id) {
     var query = {
         $or: [
             {
-                _id: { $in: [id] }
-            },
-            {
                 uid: id
             }
         ]
     };
-
+    if (dynamoEngine.isValidID(id)) {
+        query.$or.push({ _id: id });
+    }
+    debugger;
     dynamoEngine.queryProcess(
         query,
         {
