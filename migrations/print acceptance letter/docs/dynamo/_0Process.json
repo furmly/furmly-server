@@ -1,0 +1,1 @@
+[{"_id":{"$objectID":"5ae1a521daf4ff233c73e42d"},"title":"Print Acceptance Letter","description":"process to print letter","steps":[{"$objectID":"5ae1a521daf4ff233c73e42c"}],"requiresIdentity":true,"uid":"PRINT_ACCEPTANCE_LETTER","__v":0,"disableBackwardNavigation":false,"config":null,"fetchProcessor":{"$objectID":"5ae2d82cdaf4ff233c73e431"}}]
