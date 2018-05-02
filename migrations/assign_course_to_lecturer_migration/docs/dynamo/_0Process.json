@@ -1,0 +1,1 @@
+[{"_id":{"$objectID":"5ae710b8ed96bc603898dc99"},"title":"Assign Course to Lecturer","description":"used to assign course to lecturer","uid":"COURSE_LECTURER_ASSIGNMENT","steps":[{"$objectID":"5ae710b8ed96bc603898dc98"}],"requiresIdentity":true,"__v":0,"disableBackwardNavigation":false,"config":null}]
