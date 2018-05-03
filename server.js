@@ -2,6 +2,7 @@ var express = require("express"),
     config = require("./config")[
         process.env.profile || process.env.NODE_ENV || "dev"
     ],
+    fs = require("fs"),
     dynamo = require("dynamo")(config),
     debug = require("debug")("dynamo-web-server"),
     mongoose = require("mongoose"),
@@ -28,7 +29,8 @@ var express = require("express"),
     morgan = require("morgan"),
     threadPool = new (require("./lib/worker"))(
         (config.threadPool && config.threadPool.size) ||
-            require("os").cpus().length - 1
+            require("os").cpus().length - 1,
+        [`${__dirname}/node_modules/bson/lib/bson/objectid.js`]
     ),
     admin = express.Router(),
     uploadRouter = express.Router(),
@@ -1286,8 +1288,7 @@ app.use(function(er, req, res, next) {
     sendResponse.call(res, er);
 });
 
-const fs = require("fs"),
-    options = {
+const options = {
         key: fs.readFileSync("server-key.pem"),
         cert: fs.readFileSync("server-crt.pem"),
         ca: fs.readFileSync("ca-crt.pem"),
