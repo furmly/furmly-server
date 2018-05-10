@@ -1,0 +1,1 @@
+[{"_id":{"$objectID":"5aec56aaf941ca2264648081"},"title":"Assign Course to HOD","description":"process for assigning course to HOD","uid":"ASSIGN_COURSE_TO_HOD","steps":[{"$objectID":"5aec56aaf941ca2264648080"}],"requiresIdentity":true,"__v":0,"disableBackwardNavigation":false,"config":null,"fetchProcessor":{"$objectID":"5aec5928f941ca2264648085"}}]
