@@ -1,0 +1,1 @@
+[{"_id":{"$objectID":"5aec6ba5bebc0b490c108b8b"},"title":"Approve Result","description":"process for approval of results","uid":"APPROVE_RESULTS_PROCESS","steps":[{"$objectID":"5aec6ba5bebc0b490c108b8a"}],"requiresIdentity":true,"__v":0,"disableBackwardNavigation":false,"config":null}]
