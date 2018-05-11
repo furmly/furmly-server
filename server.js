@@ -1036,7 +1036,7 @@ admin.post("/domain", [
                         fileUpload.moveToPermanentSite.bind(
                             fileUpload,
                             files[index],
-                            true, // this file should be available to everyone.
+                            true // this file should be available to everyone.
                         )
                     );
                 return sum;
