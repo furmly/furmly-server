@@ -1027,7 +1027,26 @@ admin.post("/domain", [
         emptyVal
     ),
     function(req, res) {
-        infrastructure.saveDomain(req.body, sendResponse.bind(res));
+        let files = [req.body.logo, req.body.image];
+        fileUpload.isPerm(files, (er, results) => {
+            if (er) return sendResponse.call(res, er);
+            let tasks = results.reduce((sum, x, index) => {
+                if (!!!x)
+                    sum.push(
+                        fileUpload.moveToPermanentSite.bind(
+                            fileUpload,
+                            files[index]
+                        )
+                    );
+                return sum;
+            }, []);
+            if (tasks.length)
+                async.parallel(tasks, er => {
+                    if (er) return sendResponse.call(res, er);
+                    infrastructure.saveDomain(req.body, sendResponse.bind(res));
+                });
+            else infrastructure.saveDomain(req.body, sendResponse.bind(res));
+        });
     }
 ]);
 
