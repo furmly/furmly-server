@@ -29,8 +29,8 @@ module.exports = {
 			web_url: "mongodb://localhost:27017/dynamo_web",
 			dynamo_url: "mongodb://localhost:27017/dynamo"
 		},
-		migrations:{
-			folder:'../migrations'
+		migrations: {
+			folder: "../migrations"
 		},
 		processors: {
 			ttl: 165000
@@ -51,6 +51,13 @@ module.exports = {
 			issuer: "seadragon:authentication_server",
 			audience: "seadragon:modules",
 			secret: "IxrAjDoa2FqElO7IhrSrUJELhUckePEPVpaePlS_Xaw"
+		},
+		scoped_tokens: {
+			download: {
+				issuer: "seadragon:authentication_server_downwload",
+				audience: "seadragon:modules",
+				secret: "IxrZiDoa2FqElO8IhrSrUJILhUckePEPVpaePlS_Xaw"
+			}
 		}
 	},
 	test: {
