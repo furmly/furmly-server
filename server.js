@@ -55,6 +55,10 @@ let conn = mongoose.createConnection(config.data.web_url),
         roleStore: new lib.RoleStore(mongoose, conn),
         claimsStore: new lib.ClaimsStore(mongoose, conn),
         tokenGen: new lib.TokenGenerator(config.token_generator),
+        scopedTokenGen: new lib.ScopedTokenGenerator(
+            lib.TokenGenerator,
+            config.scoped_tokens
+        ),
         menuStore: new lib.MenuStore(mongoose, conn),
         defaultClaims: {
             manage_default_process: "manage-default-process",
@@ -1273,7 +1277,12 @@ uploadRouter.get("/preview/:id", function(req, res) {
 });
 
 downloadRouter.get("/:id", function(req, res) {
-    fileUpload.readFile(req.params.id, function(er, data, description) {
+    debugger;
+    fileUpload.readFile(req.params.id, req.user, function(
+        er,
+        data,
+        description
+    ) {
         if (er) return sendResponse.call(res, er);
 
         debug(description);
@@ -1295,7 +1304,24 @@ app.use("/api/upload", [
     verify.bind(new VerificationOverride((req, res, next) => next())),
     uploadRouter
 ]);
-app.use("/api/download", [verify, downloadRouter]);
+app.use("/api/download", [
+    verify.bind(
+        new VerificationOverride((req, res, next) => {
+            //verify using scoped token generator.
+            if (
+                req.query._t0 &&
+                (req.user = infrastructure.verifyScopedToken(
+                    "download",
+                    req.query._t0
+                ))
+            )
+                return next();
+
+            return unauthorized(req, res);
+        })
+    ),
+    downloadRouter
+]);
 app.use("/api/process", [processes]);
 app.use("/api/processors", [processors]);
 if (process.env.NODE_ENV !== "production")
