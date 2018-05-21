@@ -1214,6 +1214,26 @@ processes.get("/describe/:id", [
     }
 ]);
 
+processors.get("/upgrade", function(req, res) {
+    dynamoEngine.queryLib({}, (er, libs) => {
+        if (er) return sendResponse.call(res, er);
+        async.parallel(libs.map(x => x.save.bind(x)), er => {
+            if (er) return sendResponse.call(res, er);
+            //successfully saved all libs
+            dynamoEngine.queryProcessor({}, (er, ps) => {
+                if (er) return sendResponse.call(res, er);
+                async.parallel(ps.map(x => x.save.bind(x)), er => {
+                    if (er) return sendResponse.call(res, er);
+                    //successfully saved all processors
+                    return sendResponse.call(res, null, {
+                        result: "successfully saved libraries and processors"
+                    });
+                });
+            });
+        });
+    });
+});
+
 processes.post("/run/:id", [
     verifyProcessIfRequired,
     ensureHasProcessClaim,
@@ -1277,7 +1297,6 @@ uploadRouter.get("/preview/:id", function(req, res) {
 });
 
 downloadRouter.get("/:id", function(req, res) {
-    debugger;
     fileUpload.readFile(req.params.id, req.user, function(
         er,
         data,

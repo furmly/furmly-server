@@ -21,7 +21,7 @@ module.exports = {
 			password: "password"
 		},
 		fileUpload: {
-			ttl: 600000,
+			ttl: 60000000,
 			permDir: "./perm",
 			tempDir: "./temp"
 		},
@@ -40,6 +40,12 @@ module.exports = {
 		},
 		postprocessors: {
 			ttl: 50000
+		},
+		codeGenerator: {
+			defaultOptimizations: [
+				"Try-catch-all-async-functions",
+				"Count-all-lib-references"
+			]
 		},
 		entRepo: {
 			storeTTL: 600000
@@ -98,6 +104,9 @@ module.exports = {
 		entRepo: {
 			storeTTL: 600
 		},
+		codeGenerator: {
+			defaultOptimizations: ["Try-catch-all-async-functions"]
+		},
 		log: {
 			server: true
 		},
@@ -139,12 +148,18 @@ module.exports = {
 			ttl: 5000
 		},
 		fileUpload: {
-			ttl: 60000,
+			ttl: 60000000,
 			permDir: "./perm_test",
 			tempDir: "./temp_test"
 		},
 		entRepo: {
 			storeTTL: 600000
+		},
+		codeGenerator: {
+			defaultOptimizations: [
+				"Try-catch-all-async-functions",
+				"Count-all-lib-references"
+			]
 		},
 		userManager: {
 			tokenTTL: 86400
