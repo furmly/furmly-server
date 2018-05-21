@@ -1225,7 +1225,7 @@ processors.get("/upgrade", function(req, res) {
                 async.parallel(ps.map(x => x.save.bind(x)), er => {
                     if (er) return sendResponse.call(res, er);
                     //successfully saved all processors
-                    return sendResponse.call(res, {
+                    return sendResponse.call(res, null, {
                         result: "successfully saved libraries and processors"
                     });
                 });
