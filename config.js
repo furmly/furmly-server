@@ -41,6 +41,12 @@ module.exports = {
 		postprocessors: {
 			ttl: 50000
 		},
+		codeGenerator: {
+			defaultOptimizations: [
+				"Try-catch-all-async-functions",
+				"Count-all-lib-references"
+			]
+		},
 		entRepo: {
 			storeTTL: 600000
 		},
@@ -98,6 +104,9 @@ module.exports = {
 		entRepo: {
 			storeTTL: 600
 		},
+		codeGenerator: {
+			defaultOptimizations: ["Try-catch-all-async-functions"]
+		},
 		log: {
 			server: true
 		},
@@ -145,6 +154,12 @@ module.exports = {
 		},
 		entRepo: {
 			storeTTL: 600000
+		},
+		codeGenerator: {
+			defaultOptimizations: [
+				"Try-catch-all-async-functions",
+				"Count-all-lib-references"
+			]
 		},
 		userManager: {
 			tokenTTL: 86400
