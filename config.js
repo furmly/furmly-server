@@ -21,7 +21,7 @@ module.exports = {
 			password: "password"
 		},
 		fileUpload: {
-			ttl: 6000000,
+			ttl: 60000000,
 			permDir: "./perm",
 			tempDir: "./temp"
 		},
