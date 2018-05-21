@@ -148,7 +148,7 @@ module.exports = {
 			ttl: 5000
 		},
 		fileUpload: {
-			ttl: 60000,
+			ttl: 60000000,
 			permDir: "./perm_test",
 			tempDir: "./temp_test"
 		},
