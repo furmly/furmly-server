@@ -9,6 +9,7 @@ var express = require("express"),
     uuid = require("uuid"),
     url = require("url"),
     crypto = require("crypto"),
+    utils = require("./lib/utilities"),
     passport = require("passport"),
     oauth2orize = require("oauth2orize"),
     passport_auth = require("./lib/passport_auth"),
@@ -424,7 +425,7 @@ function _init() {
         });
         dynamoEngine.on("default-process-created", function(proc) {
             //apply for all the claims required in this process.
-            debugger;
+            //          debugger;
             async.waterfall(
                 [
                     infrastructure.saveClaim.bind(infrastructure, {
@@ -620,7 +621,11 @@ admin.post("/migration", [
         emptyVal
     ),
     function(req, res) {
-        infrastructure.saveMigration(req.body, sendResponse.bind(res));
+        infrastructure.saveMigration(
+            req.body,
+            createContext(req),
+            sendResponse.bind(res)
+        );
     }
 ]);
 
@@ -839,6 +844,33 @@ admin.get("/dynamo/entities", [
                 _continue.bind(null, items)
             );
         });
+    }
+]);
+
+admin.get("/thirdparty/:db_name/:query_type?", [
+    verify,
+    checkClaim.bind(
+        null,
+        infrastructure.adminClaims.can_manage_migrations,
+        emptyVal
+    ),
+    function(req, res) {
+        let filter;
+        if (req.query.filter) filter = getMongoQuery(req.query.filter);
+        if (req.query.lastId) req.query._id = req.query.lastId;
+
+        utils.runThirdPartyMigrationProcessor(
+            req.params.db_name,
+            Object.assign(createContext(req), {
+                filter,
+                isEntityRequest: req.params.query_type !== "schema"
+            }),
+            dynamoEngine,
+            (er, items) => {
+                if (er) return sendResponse.call(res, er);
+                return sendResponse.call(res, null, items);
+            }
+        );
     }
 ]);
 
@@ -1158,7 +1190,7 @@ processes.param("id", function(req, res, next, id) {
     if (dynamoEngine.isValidID(id)) {
         query.$or.push({ _id: id });
     }
-    debugger;
+
     dynamoEngine.queryProcess(
         query,
         {
