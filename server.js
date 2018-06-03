@@ -711,7 +711,7 @@ admin.get("/acl", [
     function(req, res) {
         if (req.headers.authorization) {
             verify(req, res, function() {
-                debugger;
+   //             debugger;
                 infrastructure.acl(
                     req.user.username,
                     req.user.domain,
