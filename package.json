@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "set profile=integrationTest&& mocha --require test-helpers/chai.js",
+    "debug":"node --inspect server.js",
     "test:debug": "set profile=integrationTest&& mocha --debug-brk --inspect --require test-helpers/chai.js"
   },
   "keywords": [
