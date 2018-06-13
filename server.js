@@ -140,12 +140,13 @@ function verify(req, res, next) {
                 return;
             }
             debug(user || "user is null");
-            if (user) return (req.user = user), next();
+            if (user) req.user = user;
             if (VerificationOverride.prototype.isPrototypeOf(this))
                 return (
                     debug("verification has been overriden"),
                     this.verify(req, res, next)
                 );
+            if (user) return next();
             return unauthorized(req, res);
         }
     )(req, res, next);
@@ -389,7 +390,80 @@ function createContext(req) {
 
     return context;
 }
+function verifyDownloadAccess(req) {
+    if (
+        req.query._t0 &&
+        (req.user = infrastructure.verifyScopedToken("download", req.query._t0))
+    )
+        return true;
 
+    return false;
+}
+function processFileDownload(res, er, data, description) {
+    if (er) return sendResponse.call(res, er);
+
+    debug(description);
+    res.append("Content-Type", description.mime);
+    res.append(
+        "Content-Disposition",
+        "attachment; filename=" + description.originalName
+    );
+    res.send(data);
+}
+function verifyProcessorAccessForDownload(req, res, next) {
+    if (!req.query._t1) return false;
+    let interval = (config.download && config.download.processorTTL) || 5000;
+    //its a processor based download.
+    return !async.waterfall(
+        [
+            fn => {
+                let id = req.params.id,
+                    query = {
+                        $or: [
+                            {
+                                uid: id
+                            }
+                        ]
+                    };
+                if (dynamoEngine.isValidID(id)) {
+                    query.$or.push({ _id: id });
+                }
+                dynamoEngine.queryProcessor(
+                    query,
+                    { one: true },
+                    (er, processor) => {
+                        if (er) return fn(er);
+                        if (!processor)
+                            return fn(
+                                new Error(
+                                    "Sorry please confirm download link is correct"
+                                )
+                            );
+                        req.processor = processor;
+                        fn();
+                    }
+                );
+            },
+            async.timeout(
+                ensureProcessorCanRunStandalone.bind(null, req, res),
+                interval
+            ),
+            async.timeout(
+                verifyProcessorIfRequired.bind(null, req, res),
+                interval
+            ),
+            async.timeout(
+                ensureHasProcessorClaim.bind(null, req, res),
+                interval
+            )
+        ],
+        er => {
+            if (er) return unauthorized(req, res);
+            if (verifyDownloadAccess(req)) return next();
+            return unauthorized(req, res);
+        }
+    );
+}
 function checkIfClaimIsRequired(type, value, req, res, next) {
     infrastructure.getClaims(
         {
@@ -711,7 +785,7 @@ admin.get("/acl", [
     function(req, res) {
         if (req.headers.authorization) {
             verify(req, res, function() {
-   //             debugger;
+                //             debugger;
                 infrastructure.acl(
                     req.user.username,
                     req.user.domain,
@@ -1329,21 +1403,39 @@ uploadRouter.get("/preview/:id", function(req, res) {
 });
 
 downloadRouter.get("/:id", function(req, res) {
-    fileUpload.readFile(req.params.id, req.user, function(
-        er,
-        data,
-        description
-    ) {
-        if (er) return sendResponse.call(res, er);
-
-        debug(description);
-        res.append("Content-Type", description.mime);
-        res.append(
-            "Content-Disposition",
-            "attachment; filename=" + description.originalName
+    if (!req.query._t1)
+        return fileUpload.readFile(
+            req.params.id,
+            req.user,
+            processFileDownload.bind(this, res)
         );
-        res.send(data);
-    });
+    async.waterfall(
+        [
+            fn => {
+                if (req.user) return getDomain.bind(null, req);
+                fn();
+            },
+            dynamoEngine.runProcessor.bind(
+                dynamoEngine,
+                createContext(req),
+                req.processor
+            )
+        ],
+        (er, result) => {
+            if (er) return sendResponse.call(res, er);
+            if (!result || !result.message || !result.message.id)
+                return sendResponse.call(
+                    res,
+                    new Error("Processor returned no file")
+                );
+
+            fileUpload.readFile(
+                result.message.id,
+                req.user,
+                processFileDownload.bind(this, res)
+            );
+        }
+    );
 });
 
 app.use(function(req, res, next) {
@@ -1359,14 +1451,9 @@ app.use("/api/download", [
     verify.bind(
         new VerificationOverride((req, res, next) => {
             //verify using scoped token generator.
-            if (
-                req.query._t0 &&
-                (req.user = infrastructure.verifyScopedToken(
-                    "download",
-                    req.query._t0
-                ))
-            )
-                return next();
+
+            if (verifyProcessorAccessForDownload(req, res, next)) return;
+            if (verifyDownloadAccess(req)) return next();
 
             return unauthorized(req, res);
         })
