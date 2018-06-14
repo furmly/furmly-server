@@ -214,19 +214,22 @@ function verifyIfRequired(getItem, req, res, next) {
     next();
 }
 
-function getDomain(req, fn) {
-    infrastructure.getDomains({ _id: req.user.domain }, (er, domains) => {
-        if (er) return fn(er);
-        if (domains.length) {
-            req._domain = domains[0];
-            req._domain.config =
-                req._domain.config &&
-                req._domain.config.reduce((sum, x) => {
-                    return (sum[x.name] = x.value), sum;
-                }, {});
+function getDomain(domainId, req, fn) {
+    infrastructure.getDomains(
+        getObjectIdOrQuery(domainId, { uid: domainId }),
+        (er, domains) => {
+            if (er) return fn(er);
+            if (domains.length) {
+                req._domain = domains[0];
+                req._domain.config =
+                    req._domain.config &&
+                    req._domain.config.reduce((sum, x) => {
+                        return (sum[x.name] = x.value), sum;
+                    }, {});
+            }
+            fn();
         }
-        fn();
-    });
+    );
 }
 
 function checkClaim(type, value, failed, req, res, next) {
@@ -262,6 +265,15 @@ function checkClaim(type, value, failed, req, res, next) {
 
     if (failed) return failed(type, _value, req, res, next);
     unauthorized(req, res);
+}
+
+function getObjectIdOrQuery(id, or, propName) {
+    var query = { $or: [or] };
+
+    if (dynamoEngine.isValidID(id)) {
+        query.$or.push({ [propName || "_id"]: id });
+    }
+    return query;
 }
 function removeNonASCIICharacters(str) {
     return str.replace(
@@ -392,8 +404,12 @@ function createContext(req) {
 }
 function verifyDownloadAccess(req) {
     if (
-        req.query._t0 &&
-        (req.user = infrastructure.verifyScopedToken("download", req.query._t0))
+        req.user ||
+        (req.query._t0 &&
+            (req.fileAccess = infrastructure.verifyScopedToken(
+                "download",
+                req.query._t0
+            )))
     )
         return true;
 
@@ -411,23 +427,15 @@ function processFileDownload(res, er, data, description) {
     res.send(data);
 }
 function verifyProcessorAccessForDownload(req, res, next) {
-    if (!req.query._t1) return false;
+    if (!req.query._t1 || !verifyDownloadAccess(req)) return false;
     let interval = (config.download && config.download.processorTTL) || 5000;
+
     //its a processor based download.
     return !async.waterfall(
         [
             fn => {
                 let id = req.params.id,
-                    query = {
-                        $or: [
-                            {
-                                uid: id
-                            }
-                        ]
-                    };
-                if (dynamoEngine.isValidID(id)) {
-                    query.$or.push({ _id: id });
-                }
+                    query = getObjectIdOrQuery(id, { uid: id });
                 dynamoEngine.queryProcessor(
                     query,
                     { one: true },
@@ -439,28 +447,35 @@ function verifyProcessorAccessForDownload(req, res, next) {
                                     "Sorry please confirm download link is correct"
                                 )
                             );
+                        //confirm if the object in the scopedtoken matches the id of the processor to run.
+                        if (
+                            !req.fileAccess ||
+                            (typeof req.fileAccess.data == "string" &&
+                                req.fileAccess.data !== id) ||
+                            (typeof req.fileAccess.data == "object" &&
+                                req.fileAccess.data.id !== id)
+                        )
+                            return fn(
+                                new Error("Processor in token does not match")
+                            );
                         req.processor = processor;
                         fn();
                     }
                 );
             },
+
+            //use timeouts because this functions dont properly support callback syntax.
             async.timeout(
                 ensureProcessorCanRunStandalone.bind(null, req, res),
-                interval
-            ),
-            async.timeout(
-                verifyProcessorIfRequired.bind(null, req, res),
-                interval
-            ),
-            async.timeout(
-                ensureHasProcessorClaim.bind(null, req, res),
                 interval
             )
         ],
         er => {
+            //abondon etimeouts because its assumed the functions have sent the results.
+            if (er && er.code == "ETIMEDOUT") return;
             if (er) return unauthorized(req, res);
-            if (verifyDownloadAccess(req)) return next();
-            return unauthorized(req, res);
+
+            return next();
         }
     );
 }
@@ -816,11 +831,18 @@ admin.get("/acl", [
                                 };
 
                                 if (req.user) {
-                                    return getDomain(req, er => {
-                                        if (er)
-                                            return sendResponse.call(res, er);
-                                        run();
-                                    });
+                                    return getDomain(
+                                        req.user.domain,
+                                        req,
+                                        er => {
+                                            if (er)
+                                                return sendResponse.call(
+                                                    res,
+                                                    er
+                                                );
+                                            run();
+                                        }
+                                    );
                                 }
                                 run();
                             }
@@ -1212,16 +1234,7 @@ admin.get("/menu", [
 
 processors.param("id", function(req, res, next, id) {
     debug("fetching processor " + id);
-    var query = {
-        $or: [
-            {
-                uid: id
-            }
-        ]
-    };
-    if (dynamoEngine.isValidID(id)) {
-        query.$or.push({ _id: id });
-    }
+    var query = getObjectIdOrQuery(id, { uid: id });
     debug(query);
     dynamoEngine.queryProcessor(
         query,
@@ -1254,16 +1267,7 @@ processors.param("id", function(req, res, next, id) {
 
 processes.param("id", function(req, res, next, id) {
     debug("fetching process");
-    var query = {
-        $or: [
-            {
-                uid: id
-            }
-        ]
-    };
-    if (dynamoEngine.isValidID(id)) {
-        query.$or.push({ _id: id });
-    }
+    var query = getObjectIdOrQuery(id, { uid: id });
 
     dynamoEngine.queryProcess(
         query,
@@ -1310,7 +1314,7 @@ processes.get("/describe/:id", [
                 }
             );
         if (req.user) {
-            return getDomain(req, er => {
+            return getDomain(req.user.domain, req, er => {
                 if (er) return sendResponse.call(res, er);
                 describe();
             });
@@ -1349,7 +1353,7 @@ processes.post("/run/:id", [
             req.process.run(createContext(req), sendResponse.bind(res));
         if (req.user) {
             //populate domain info.
-            return getDomain(req, er => {
+            return getDomain(req.user.domain, req, er => {
                 if (er) return sendResponse.call(res, er);
                 send();
             });
@@ -1371,7 +1375,7 @@ processors.use("/run/:id", [
             );
 
         if (req.user) {
-            return getDomain(req, er => {
+            return getDomain(req.user.domain, req, er => {
                 if (er) return sendResponse.call(res, er);
                 send();
             });
@@ -1402,41 +1406,56 @@ uploadRouter.get("/preview/:id", function(req, res) {
     });
 });
 
-downloadRouter.get("/:id", function(req, res) {
-    if (!req.query._t1)
-        return fileUpload.readFile(
-            req.params.id,
-            req.user,
-            processFileDownload.bind(this, res)
-        );
-    async.waterfall(
-        [
-            fn => {
-                if (req.user) return getDomain.bind(null, req);
-                fn();
-            },
-            dynamoEngine.runProcessor.bind(
-                dynamoEngine,
-                createContext(req),
-                req.processor
-            )
-        ],
-        (er, result) => {
-            if (er) return sendResponse.call(res, er);
-            if (!result || !result.message || !result.message.id)
-                return sendResponse.call(
-                    res,
-                    new Error("Processor returned no file")
-                );
-
-            fileUpload.readFile(
-                result.message.id,
-                req.user,
+downloadRouter.get("/:id", [
+    verify.bind(
+        new VerificationOverride((req, res, next) => {
+            //verify using scoped token generator.
+            if (verifyProcessorAccessForDownload(req, res, next)) return;
+            if (verifyDownloadAccess(req)) return next();
+            return unauthorized(req, res);
+        })
+    ),
+    function(req, res) {
+        if (!req.query._t1)
+            return fileUpload.readFile(
+                req.params.id,
+                req.fileAccess,
                 processFileDownload.bind(this, res)
             );
-        }
-    );
-});
+        async.waterfall(
+            [
+                fn => {
+                    if (
+                        typeof req.fileAccess.data == "object" &&
+                        req.fileAccess.data.domain
+                    )
+                        return getDomain(req.fileAccess.data.domain, req, fn);
+                    fn();
+                },
+                fn =>
+                    dynamoEngine.runProcessor(
+                        createContext(req),
+                        req.processor,
+                        fn
+                    )
+            ],
+            (er, result) => {
+                if (er) return sendResponse.call(res, er);
+                if (!result  || !result.id)
+                    return sendResponse.call(
+                        res,
+                        new Error("Processor returned no file")
+                    );
+
+                fileUpload.readFile(
+                    result.id,
+                    result.user,
+                    processFileDownload.bind(this, res)
+                );
+            }
+        );
+    }
+]);
 
 app.use(function(req, res, next) {
     res.set("Cache-Control", "no-cache");
@@ -1447,19 +1466,7 @@ app.use("/api/upload", [
     verify.bind(new VerificationOverride((req, res, next) => next())),
     uploadRouter
 ]);
-app.use("/api/download", [
-    verify.bind(
-        new VerificationOverride((req, res, next) => {
-            //verify using scoped token generator.
-
-            if (verifyProcessorAccessForDownload(req, res, next)) return;
-            if (verifyDownloadAccess(req)) return next();
-
-            return unauthorized(req, res);
-        })
-    ),
-    downloadRouter
-]);
+app.use("/api/download", [downloadRouter]);
 app.use("/api/process", [processes]);
 app.use("/api/processors", [processors]);
 if (process.env.NODE_ENV !== "production")
