@@ -1248,7 +1248,7 @@ processors.param("id", function(req, res, next, id) {
                     res.send({
                         message:
                             "An error occurred while fetching the processor",
-                        obj: er
+                        error_description: er.message
                     })
                 );
             if (!proc)
@@ -1281,7 +1281,7 @@ processes.param("id", function(req, res, next, id) {
                     res.status(500),
                     res.send({
                         message: "An error occurred while fetching the process",
-                        obj: er
+                        error_description: er.message
                     })
                 );
             if (!proc)
@@ -1303,6 +1303,7 @@ processes.get("/describe/:id", [
     ensureHasProcessClaim,
     ensureProcessContext,
     function(req, res) {
+        debugger;
         const describe = () =>
             req.process.describe(
                 Object.assign(req.query || {}, createContext(req)),
@@ -1441,7 +1442,7 @@ downloadRouter.get("/:id", [
             ],
             (er, result) => {
                 if (er) return sendResponse.call(res, er);
-                if (!result  || !result.id)
+                if (!result || !result.id)
                     return sendResponse.call(
                         res,
                         new Error("Processor returned no file")
