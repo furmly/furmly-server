@@ -1,1 +1,0 @@
-{"name":{"type":"String","required":true},"domain":{"type":"ObjectId"},"priority":{"type":"Number","default":0}}

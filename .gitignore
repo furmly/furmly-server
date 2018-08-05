@@ -121,4 +121,4 @@ typings/
 # dotenv environment variables file
 .env
 
-./node_modules/dynamo
+./node_modules/furmly

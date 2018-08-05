@@ -1,1 +1,0 @@
-{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"dynamo.faculties"},{"v":2,"unique":true,"key":{"FACULTY_ID":1},"name":"FACULTY_ID_1","sparse":true,"ns":"dynamo.faculties"},{"v":2,"unique":true,"key":{"JUPEB_OPTION_ID":1},"name":"JUPEB_OPTION_ID_1","sparse":true,"ns":"dynamo.faculties"}]}

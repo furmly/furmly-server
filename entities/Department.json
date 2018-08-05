@@ -1,1 +1,0 @@
-{"name":{"type":"String","required":true},"code":{"type":"String"},"domain":{"type":"String","required":true},"areasOfSpecialization":[{"code":{"type":"String"},"name":{"type":"String"}}],"faculty":{"type":"ObjectId","ref":"Faculty"},"studentTypeConfig":{"type":"Mixed"}}

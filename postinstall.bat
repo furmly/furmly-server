@@ -1,1 +1,1 @@
-"%PROGRAMFILES%/Git/git-bash.exe" "./restore.sh" dynamo dynamo_web
+"%PROGRAMFILES%/Git/git-bash.exe" "./restore.sh" furmly furmly_web

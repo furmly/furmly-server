@@ -1,1 +1,0 @@
-{"department":{"type":"ObjectId","ref":"Department"},"departmentOption":{"type":"ObjectId"},"yearOfStudy":{"type":"ObjectId","ref":"YearOfStudy"},"yearOfEntry":{"type":"ObjectId","ref":"YearOfStudy"},"studentMode":{"type":"ObjectId","ref":"StudentType"},"modeOfEntry":{"type":"ObjectId","ref":"ModeOfEntry"}}

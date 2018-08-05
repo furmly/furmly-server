@@ -1,1 +1,0 @@
-{"compound_index":[["studentType","refNo"]],"firstName":{"type":"String","required":true},"surname":{"type":"String","required":true},"middlename":{"type":"String","required":true},"refNo":{"type":"String"},"studentType":{"type":"ObjectId","ref":"StudentType"},"programmeDetails":{"type":"Mixed"},"otherNames":{"type":"String","required":true}}

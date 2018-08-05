@@ -1,1 +1,0 @@
-{"checksum":{"type":"String","required":true},"regNumb":{"type":"String","required":true},"totalScore":{"type":"Number"},"subjects":[{"name":{"type":"String","required":true},"score":{"type":"Number","required":true}}]}

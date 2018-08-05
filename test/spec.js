@@ -101,7 +101,7 @@ describe("Integration Tests", function() {
 	after(function(done) {
 		// console.log("after executing...");
 		var webConn = mongoose.createConnection(config.data.web_url);
-		var dynConn = mongoose.createConnection(config.data.dynamo_url);
+		var dynConn = mongoose.createConnection(config.data.furmly_url);
 		webConn.dropDatabase(function(er) {
 			dynConn.dropDatabase(function(er) {
 				done();

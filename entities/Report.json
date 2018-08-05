@@ -1,1 +1,0 @@
-{"name":{"type":"String","required":true},"uid":{"type":"String","unique":true,"sparse":true},"template":{"type":"String"},"description":{"type":"String"},"domain":{"type":"ObjectId"}}

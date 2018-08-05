@@ -2,7 +2,7 @@
 	"apps": [
 		{
 			"script": "./server.js",
-			"name": "dynamo_webserver",
+			"name": "furmly_server",
 			"instances": 1,
 			"exec_mode": "fork_mode",
 			"env": {

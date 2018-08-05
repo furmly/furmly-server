@@ -1,1 +1,0 @@
-{"name":{"type":"String"},"uid":{"type":"String"},"hasCommission":{"type":"Boolean"},"group":{"type":"String"},"everyone":{"type":"Boolean"},"domain":{"type":"ObjectId"}}

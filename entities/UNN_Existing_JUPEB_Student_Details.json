@@ -1,1 +1,0 @@
-{"department":{"type":"ObjectId","ref":"UNN_JUPEB_Department"},"session":{"type":"ObjectId","ref":"Session"},"admissionType":{"type":"ObjectId","ref":"AdmissionType"}}
