@@ -1,5 +1,5 @@
 const debug = require("debug")("furmly-server:route-utils");
-
+const createError = require("http-errors");
 
 function createContext(req) {
   const context =
@@ -53,8 +53,8 @@ function checkIfClaimIsRequired(infrastructure, type, value, req, res, next) {
       value: value(req)
     },
     function(er, result) {
-      if (er) return unauthorized(req, res, next);
-      if (result.length) return unauthorized(req, res, next);
+      if (er) return next(new createError.Unauthorized());
+      if (result.length) return next(new createError.Unauthorized());
       debug("a claim is not required for this request");
       req._claimNotRequired = true;
       next();
@@ -119,7 +119,7 @@ function checkClaim(type, value, failed, req, res, next) {
   }
 
   if (failed) return failed(type, _value, req, res, next);
-  unauthorized(req, res, next);
+  next(new createError.Unauthorized());
 }
 
 function getObjectIdOrQuery(furmlyEngine, id, or, propName) {

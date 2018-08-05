@@ -3,25 +3,25 @@ const express = require("express");
 const debug = require("debug")("furmly-server:processors");
 const ensureProcessorCanRunStandalone = require("./middlewares/ensureProcessorCanRunStandalone");
 const verifyIfRequired = require("./middlewares/verifyIfRequired");
-const createError = require("http-errors")
+const createError = require("http-errors");
+const furmlyEngine = require("../lib/furmly_engine");
+const infrastructure = require("../lib/index");
 const sendResponse = utils.sendResponse;
 const async = require("async");
 function setup(app, options) {
   // variables required by route.
-  const furmlyEngine = options.furmlyEngine;
-  const infrastucture = options.infrastucture;
 
   const createContext = utils.createContext;
   const processors = express.Router();
   const getObjectIdOrQuery = utils.getObjectIdOrQuery;
-  const getDomain = utils.getDomain.bind(null, infrastucture);
+  const getDomain = utils.getDomain.bind(null, infrastructure);
   const verifyProcessorIfRequired = verifyIfRequired.bind(
     null,
     req => req.processor
   );
   const ensureHasProcessorClaim = utils.checkClaim.bind(
     null,
-    infrastucture.constants.CLAIMS.PROCESSOR,
+    infrastructure.constants.CLAIMS.PROCESSOR,
     utils.checkId,
     utils.checkIfClaimIsRequired
   );
@@ -103,4 +103,4 @@ function setup(app, options) {
   app.use("/api/processors", [processors]);
 }
 
-exports = setup;
+module.exports = setup;

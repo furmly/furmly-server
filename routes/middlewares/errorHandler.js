@@ -1,6 +1,9 @@
 const debug = require("debug")("furmly-server:error-handler-middleware");
 const utils = require("../utils");
 function errorHandler(er, req, res, next) {
+  if (res.headersSent) {
+    return next(er);
+  }
   const errorMessage = utils.removeNonASCIICharacters(er.message);
   debug(er);
   res.status(er.status || 500);

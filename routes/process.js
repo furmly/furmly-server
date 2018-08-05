@@ -4,12 +4,13 @@ const verifyIfRequired = require("./middlewares/verifyIfRequired");
 const ensureProcessContext = require("./middlewares/ensureProcessContext");
 const debug = require("debug")("furmly-server:routes-process");
 const createError = require("http-errors");
+const furmlyEngine = require("../lib/furmly_engine");
+const infrastructure = require("../lib/index");
 const sendResponse = utils.sendResponse;
 const createContext = utils.createContext;
-function setup(app, options) {
+
+function setup(app) {
   const processes = express.Router();
-  const furmlyEngine = options.furmlyEngine;
-  const infrastructure = options.infrastructure;
   const getObjectIdOrQuery = utils.getObjectIdOrQuery.bind(null, furmlyEngine);
   const getDomain = utils.getDomain.bind(null, infrastructure);
   const ensureHasProcessClaim = utils.checkClaim.bind(

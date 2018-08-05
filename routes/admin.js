@@ -1,19 +1,24 @@
 const express = require("express");
 const debug = require("debug")("furmly-server:admin");
 const verify = require("./middlewares/verify");
+const utils = require("./utils");
+const createError = require("http-errors");
+const async = require("async");
+const infrastructureUtils = require("../lib/utilities");
+const infrastructure = require("../lib/index");
+const furmlyEngine = require("../lib/furmly_engine");
+const fileUpload = require("../lib/uploader");
 function setup(app, options) {
-  const infrastructure = options.infrastructure;
-  const furmlyEngine = options.furmlyEngine;
-  const utils = options.utils;
   const admin = express.Router();
   const checkClaim = utils.checkClaim;
   const emptyVal = utils.emptyVal;
   const sendResponse = utils.sendResponse;
   const createContext = utils.createContext;
   const getDomain = utils.getDomain;
-  const getRangeQuery = utils.getRangeQuery;
+  const getRangeQuery = utils.getRangeQuery.bind(null, furmlyEngine);
   const getMongoQuery = utils.getMongoQuery;
   const toRegex = utils.toRegex;
+  // const fileUpload = options.fileUpload;
   admin.get("/claimable", [
     verify,
     checkClaim.bind(
@@ -21,22 +26,20 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_claims,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       furmlyEngine.queryProcessor(
         {},
         { fields: { title: 1 }, noTransformaton: true },
         (er, processors) => {
-          if (er) return sendResponse.call(res, er);
+          if (er) return next(createError(400, er));
 
           furmlyEngine.queryProcess(
             {},
             { fields: { title: 1 }, noTransformaton: true },
             (er, processes) => {
-              if (er) return sendResponse.call(res, er);
+              if (er) return next(createError(400, er));
 
-              sendResponse.call(
-                res,
-                null,
+              res.send(
                 processors
                   .map(x => ({
                     displayLabel: x.title,
@@ -63,11 +66,11 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_migrations,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       infrastructure.saveMigration(
         req.body,
         createContext(req),
-        sendResponse.bind(res)
+        sendResponse.bind(res, next)
       );
     }
   ]);
@@ -79,8 +82,8 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_users,
       emptyVal
     ),
-    function(req, res) {
-      infrastructure.register(req.body, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.register(req.body, sendResponse.bind(res, next));
     }
   ]);
 
@@ -91,8 +94,8 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_users,
       emptyVal
     ),
-    function(req, res) {
-      infrastructure.updateUser(req.body, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.updateUser(req.body, sendResponse.bind(res, next));
     }
   ]);
   admin.post("/role", [
@@ -102,8 +105,8 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_roles,
       emptyVal
     ),
-    function(req, res) {
-      infrastructure.createRole(req.body, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.createRole(req.body, sendResponse.bind(res, next));
     }
   ]);
   admin.post("/role/edit", [
@@ -113,8 +116,8 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_roles,
       emptyVal
     ),
-    function(req, res) {
-      infrastructure.updateRole(req.body, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.updateRole(req.body, sendResponse.bind(res, next));
     }
   ]);
   admin.post("/claim", [
@@ -124,8 +127,8 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_claims,
       emptyVal
     ),
-    function(req, res) {
-      infrastructure.saveClaim(req.body, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.saveClaim(req.body, sendResponse.bind(res, next));
     }
   ]);
 
@@ -136,22 +139,22 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_claims,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       debug(req.params);
-      infrastructure.deleteClaim(req.params.id, sendResponse.bind(res));
+      infrastructure.deleteClaim(req.params.id, sendResponse.bind(res, next));
     }
   ]);
 
   admin.post("/menu", [
     verify,
     checkClaim.bind(null, infrastructure.adminClaims.can_manage_menu, emptyVal),
-    function(req, res) {
-      infrastructure.saveMenu(req.body, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.saveMenu(req.body, sendResponse.bind(res, next));
     }
   ]);
 
   admin.get("/acl", [
-    function(req, res) {
+    function(req, res, next) {
       if (req.headers.authorization) {
         verify(req, res, function() {
           infrastructure.acl(
@@ -160,7 +163,7 @@ function setup(app, options) {
             req.user.client.clientId,
             req.query.category,
             function(er, menu) {
-              if (er) return sendResponse.call(res, er);
+              if (er) return next(createError(400, er));
 
               furmlyEngine.queryProcessor(
                 {
@@ -168,8 +171,8 @@ function setup(app, options) {
                 },
                 { one: true },
                 function(er, proc) {
-                  if (er) return sendResponse.call(res, er);
-                  if (!proc) return sendResponse.call(res, null, menu);
+                  if (er) return next(createError(400, er));
+                  if (!proc) return res.send(menu);
                   debug("running menu filter...");
                   debug(req.user);
                   const run = () => {
@@ -178,13 +181,13 @@ function setup(app, options) {
                         menu
                       }),
                       proc,
-                      sendResponse.bind(res)
+                      sendResponse.bind(res, next)
                     );
                   };
 
                   if (req.user) {
                     return getDomain(req.user.domain, req, er => {
-                      if (er) return sendResponse.call(res, er);
+                      if (er) return next(createError(400, er));
                       run();
                     });
                   }
@@ -197,17 +200,18 @@ function setup(app, options) {
       } else {
         let query = req.query;
         if (!query.category) {
-          return sendResponse.call(
-            res,
-            new Error(`missing parameters , kindly ensure category is set`),
-            401
+          return next(
+            createError(
+              401,
+              `missing parameters , kindly ensure category is set`
+            )
           );
         }
         infrastructure.externalAcl(
           query.domain,
           query.clientId,
           query.category,
-          sendResponse.bind(res)
+          sendResponse.bind(res, next)
         );
       }
     }
@@ -220,8 +224,12 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_migrations,
       emptyVal
     ),
-    function(req, res) {
-      furmlyEngine.allEntityConfigurations(true, true, sendResponse.bind(res));
+    function(req, res, next) {
+      furmlyEngine.allEntityConfigurations(
+        true,
+        true,
+        sendResponse.bind(res, next)
+      );
     }
   ]);
 
@@ -232,7 +240,7 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_migrations,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       let query = getRangeQuery(req, true),
         _filter,
         options = {
@@ -240,9 +248,9 @@ function setup(app, options) {
           limit: (req.query.count && parseInt(req.query.count)) || 10
         },
         _continue = (items, er, count) => {
-          if (er) return sendResponse.call(res, er);
+          if (er) return next(createError(400, er));
 
-          return sendResponse.call(res, null, {
+          return res.send({
             items,
             total: count
           });
@@ -259,7 +267,7 @@ function setup(app, options) {
           query,
           options,
           (er, items) => {
-            if (er) return sendResponse.call(res, er);
+            if (er) return next(createError(400, er));
 
             furmlyEngine.countConfigurations(
               _filter || {},
@@ -271,7 +279,7 @@ function setup(app, options) {
       options.full = true;
       options.noTransformaton = true;
       furmlyEngine.query(req.query.type, query, options, (er, items) => {
-        if (er) return sendResponse.call(res, er);
+        if (er) return next(createError(400, er));
         furmlyEngine.count(
           req.query.type,
           _filter || {},
@@ -288,12 +296,12 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_migrations,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       let filter;
       if (req.query.filter) filter = getMongoQuery(req.query.filter);
       if (req.query.lastId) req.query._id = req.query.lastId;
 
-      utils.runThirdPartyMigrationProcessor(
+      infrastructureUtils.runThirdPartyMigrationProcessor(
         req.params.db_name,
         Object.assign(createContext(req), {
           filter,
@@ -301,8 +309,8 @@ function setup(app, options) {
         }),
         furmlyEngine,
         (er, items) => {
-          if (er) return sendResponse.call(res, er);
-          return sendResponse.call(res, null, items);
+          if (er) return next(createError(400, er));
+          return res.send(items);
         }
       );
     }
@@ -315,8 +323,8 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_migrations,
       emptyVal
     ),
-    function(req, res) {
-      infrastructure.getSchemas(sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.getSchemas(sendResponse.bind(res, next));
     }
   ]);
 
@@ -327,7 +335,7 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_migrations,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       let query = getRangeQuery(req);
       if (req.query._id) query._id = req.query._id;
       if (req.query.filter)
@@ -339,7 +347,7 @@ function setup(app, options) {
       infrastructure[`get${middle}Range`](
         query,
         parseInt(req.query.count),
-        sendResponse.bind(res)
+        sendResponse.bind(res, next)
       );
     }
   ]);
@@ -351,11 +359,11 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_migrations,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       infrastructure.getMigrationRange(
         Object.assign({}, getRangeQuery(req)),
         parseInt(req.query.count),
-        sendResponse.bind(res)
+        sendResponse.bind(res, next)
       );
     }
   ]);
@@ -367,10 +375,10 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_migrations,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       infrastructure.getMigrationById(
         { _id: req.params.id },
-        sendResponse.bind(res)
+        sendResponse.bind(res, next)
       );
     }
   ]);
@@ -382,7 +390,7 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_users,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       infrastructure.getUserRange(
         Object.assign(
           {},
@@ -394,7 +402,7 @@ function setup(app, options) {
           getRangeQuery(req)
         ),
         parseInt(req.query.count),
-        sendResponse.bind(res)
+        sendResponse.bind(res, next)
       );
     }
   ]);
@@ -406,10 +414,10 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_users,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       infrastructure.getUserById(
         { _id: req.params.id },
-        sendResponse.bind(res)
+        sendResponse.bind(res, next)
       );
     }
   ]);
@@ -421,7 +429,7 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_roles,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       if (!req.query.all)
         return infrastructure.getRoleRange(
           Object.assign(
@@ -430,10 +438,10 @@ function setup(app, options) {
             getRangeQuery(req)
           ),
           parseInt(req.query.count),
-          sendResponse.bind(res)
+          sendResponse.bind(res, next)
         );
 
-      infrastructure.getRoles({}, sendResponse.bind(res));
+      infrastructure.getRoles({}, sendResponse.bind(res, next));
     }
   ]);
   admin.get("/role/:id", [
@@ -443,16 +451,16 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_roles,
       emptyVal
     ),
-    function(req, res) {
-      infrastructure.getRole(req.params.id, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.getRole(req.params.id, sendResponse.bind(res, next));
     }
   ]);
 
   admin.get("/menu/:id", [
     verify,
     checkClaim.bind(null, infrastructure.adminClaims.can_manage_menu, emptyVal),
-    function(req, res) {
-      infrastructure.getMenu(req.params.id, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.getMenu(req.params.id, sendResponse.bind(res, next));
     }
   ]);
   admin.get("/claim", [
@@ -462,8 +470,8 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_claims,
       emptyVal
     ),
-    function(req, res) {
-      infrastructure.getClaims({}, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.getClaims({}, sendResponse.bind(res, next));
     }
   ]);
 
@@ -474,7 +482,7 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_claims,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       infrastructure.getClaimRange(
         Object.assign(
           (req.query.description && {
@@ -484,7 +492,7 @@ function setup(app, options) {
           getRangeQuery(req)
         ),
         parseInt(req.query.count),
-        sendResponse.bind(res)
+        sendResponse.bind(res, next)
       );
     }
   ]);
@@ -496,12 +504,12 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_domains,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       let files = [req.body.logo, req.body.image];
       fileUpload.isPerm(files, (er, results) => {
-        if (er) return sendResponse.call(res, er);
+        if (er) return next(createError(400, er));
         let tasks = results.reduce((sum, x, index) => {
-          if (!!!x)
+          if (!x)
             sum.push(
               fileUpload.moveToPermanentSite.bind(
                 fileUpload,
@@ -513,10 +521,10 @@ function setup(app, options) {
         }, []);
         if (tasks.length)
           async.parallel(tasks, er => {
-            if (er) return sendResponse.call(res, er);
-            infrastructure.saveDomain(req.body, sendResponse.bind(res));
+            if (er) return next(createError(400, er));
+            infrastructure.saveDomain(req.body, sendResponse.bind(res, next));
           });
-        else infrastructure.saveDomain(req.body, sendResponse.bind(res));
+        else infrastructure.saveDomain(req.body, sendResponse.bind(res, next));
       });
     }
   ]);
@@ -528,8 +536,8 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_domains,
       emptyVal
     ),
-    function(req, res) {
-      infrastructure.getDomains({}, sendResponse.bind(res));
+    function(req, res, next) {
+      infrastructure.getDomains({}, sendResponse.bind(res, next));
     }
   ]);
 
@@ -540,14 +548,14 @@ function setup(app, options) {
       infrastructure.adminClaims.can_manage_domains,
       emptyVal
     ),
-    function(req, res) {
+    function(req, res, next) {
       infrastructure.getDomainRange(
         Object.assign(
           (req.query.name && { name: toRegex(req.query.name) }) || {},
           getRangeQuery(req)
         ),
         parseInt(req.query.count),
-        sendResponse.bind(res)
+        sendResponse.bind(res, next)
       );
     }
   ]);
@@ -555,7 +563,7 @@ function setup(app, options) {
   admin.get("/menu", [
     verify,
     checkClaim.bind(null, infrastructure.adminClaims.can_manage_menu, emptyVal),
-    function(req, res) {
+    function(req, res, next) {
       infrastructure.getMenuRange(
         Object.assign(
           (req.query.title && {
@@ -565,9 +573,10 @@ function setup(app, options) {
           getRangeQuery(req)
         ),
         parseInt(req.query.count),
-        sendResponse.bind(res)
+        sendResponse.bind(res, next)
       );
     }
   ]);
+  app.use("/api/admin", [admin]);
 }
 module.exports = setup;
