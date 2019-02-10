@@ -3,61 +3,18 @@ const debug = require("debug")("furmly-server:admin");
 const verify = require("./middlewares/verify");
 const utils = require("./utils");
 const createError = require("http-errors");
-const async = require("async");
 const infrastructureUtils = require("../lib/utilities");
-const infrastructure = require("../lib/index");
-const furmlyEngine = require("../lib/furmly_engine");
-const fileUpload = require("../lib/uploader");
-function setup(app, options) {
+const infrastructure = require("../lib/setup_infrastructure");
+const furmlyEngine = require("../lib/setup_fumly_engine");
+function setup(app) {
   const admin = express.Router();
   const checkClaim = utils.checkClaim;
   const emptyVal = utils.emptyVal;
   const sendResponse = utils.sendResponse;
   const createContext = utils.createContext;
   const getDomain = utils.getDomain;
-  const getRangeQuery = utils.getRangeQuery.bind(null, furmlyEngine);
+  const getRangeQuery = utils.getRangeQuery;
   const getMongoQuery = utils.getMongoQuery;
-  const toRegex = utils.toRegex;
-  // const fileUpload = options.fileUpload;
-  admin.get("/claimable", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_claims,
-      emptyVal
-    ),
-    function(req, res, next) {
-      furmlyEngine.queryProcessor(
-        {},
-        { fields: { title: 1 }, noTransformaton: true },
-        (er, processors) => {
-          if (er) return next(createError(400, er));
-
-          furmlyEngine.queryProcess(
-            {},
-            { fields: { title: 1 }, noTransformaton: true },
-            (er, processes) => {
-              if (er) return next(createError(400, er));
-
-              res.send(
-                processors
-                  .map(x => ({
-                    displayLabel: x.title,
-                    _id: x._id
-                  }))
-                  .concat(
-                    processes.map(x => ({
-                      displayLabel: x.title,
-                      _id: x._id
-                    }))
-                  )
-              );
-            }
-          );
-        }
-      );
-    }
-  ]);
 
   admin.post("/migration", [
     verify,
@@ -74,85 +31,6 @@ function setup(app, options) {
       );
     }
   ]);
-
-  admin.post("/user", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_users,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.register(req.body, sendResponse.bind(res, next));
-    }
-  ]);
-
-  admin.post("/user/edit", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_users,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.updateUser(req.body, sendResponse.bind(res, next));
-    }
-  ]);
-  admin.post("/role", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_roles,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.createRole(req.body, sendResponse.bind(res, next));
-    }
-  ]);
-  admin.post("/role/edit", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_roles,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.updateRole(req.body, sendResponse.bind(res, next));
-    }
-  ]);
-  admin.post("/claim", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_claims,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.saveClaim(req.body, sendResponse.bind(res, next));
-    }
-  ]);
-
-  admin.delete("/claim/:id", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_claims,
-      emptyVal
-    ),
-    function(req, res, next) {
-      debug(req.params);
-      infrastructure.deleteClaim(req.params.id, sendResponse.bind(res, next));
-    }
-  ]);
-
-  admin.post("/menu", [
-    verify,
-    checkClaim.bind(null, infrastructure.adminClaims.can_manage_menu, emptyVal),
-    function(req, res, next) {
-      infrastructure.saveMenu(req.body, sendResponse.bind(res, next));
-    }
-  ]);
-
   admin.get("/acl", [
     function(req, res, next) {
       if (req.headers.authorization) {
@@ -164,7 +42,7 @@ function setup(app, options) {
             req.query.category,
             function(er, menu) {
               if (er) return next(createError(400, er));
-
+              debugger;
               furmlyEngine.queryProcessor(
                 {
                   uid: furmlyEngine.constants.UIDS.PROCESSOR.MENU_FILTER
@@ -216,7 +94,6 @@ function setup(app, options) {
       }
     }
   ]);
-
   admin.get("/furmly/schemas", [
     verify,
     checkClaim.bind(
@@ -232,7 +109,6 @@ function setup(app, options) {
       );
     }
   ]);
-
   admin.get("/furmly/entities", [
     verify,
     checkClaim.bind(
@@ -288,7 +164,6 @@ function setup(app, options) {
       });
     }
   ]);
-
   admin.get("/thirdparty/:db_name/:query_type?", [
     verify,
     checkClaim.bind(
@@ -315,7 +190,6 @@ function setup(app, options) {
       );
     }
   ]);
-
   admin.get("/schemas", [
     verify,
     checkClaim.bind(
@@ -327,7 +201,6 @@ function setup(app, options) {
       infrastructure.getSchemas(sendResponse.bind(res, next));
     }
   ]);
-
   admin.get("/entities", [
     verify,
     checkClaim.bind(
@@ -351,7 +224,6 @@ function setup(app, options) {
       );
     }
   ]);
-
   admin.get("/migration", [
     verify,
     checkClaim.bind(
@@ -367,7 +239,6 @@ function setup(app, options) {
       );
     }
   ]);
-
   admin.get("/migration/:id", [
     verify,
     checkClaim.bind(
@@ -378,201 +249,6 @@ function setup(app, options) {
     function(req, res, next) {
       infrastructure.getMigrationById(
         { _id: req.params.id },
-        sendResponse.bind(res, next)
-      );
-    }
-  ]);
-
-  admin.get("/user", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_users,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.getUserRange(
-        Object.assign(
-          {},
-          (req.query.domain && { domain: req.query.domain }) || {},
-          (req.query.username && {
-            username: toRegex(req.query.username)
-          }) ||
-            {},
-          getRangeQuery(req)
-        ),
-        parseInt(req.query.count),
-        sendResponse.bind(res, next)
-      );
-    }
-  ]);
-
-  admin.get("/user/byid/:id", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_users,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.getUserById(
-        { _id: req.params.id },
-        sendResponse.bind(res, next)
-      );
-    }
-  ]);
-
-  admin.get("/role", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_roles,
-      emptyVal
-    ),
-    function(req, res, next) {
-      if (!req.query.all)
-        return infrastructure.getRoleRange(
-          Object.assign(
-            (req.query.domain && { domain: req.query.domain }) || {},
-            (req.query.name && { name: toRegex(req.query.name) }) || {},
-            getRangeQuery(req)
-          ),
-          parseInt(req.query.count),
-          sendResponse.bind(res, next)
-        );
-
-      infrastructure.getRoles({}, sendResponse.bind(res, next));
-    }
-  ]);
-  admin.get("/role/:id", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_roles,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.getRole(req.params.id, sendResponse.bind(res, next));
-    }
-  ]);
-
-  admin.get("/menu/:id", [
-    verify,
-    checkClaim.bind(null, infrastructure.adminClaims.can_manage_menu, emptyVal),
-    function(req, res, next) {
-      infrastructure.getMenu(req.params.id, sendResponse.bind(res, next));
-    }
-  ]);
-  admin.get("/claim", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_claims,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.getClaims({}, sendResponse.bind(res, next));
-    }
-  ]);
-
-  admin.get("/claim/paged", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_claims,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.getClaimRange(
-        Object.assign(
-          (req.query.description && {
-            description: toRegex(req.query.description)
-          }) ||
-            {},
-          getRangeQuery(req)
-        ),
-        parseInt(req.query.count),
-        sendResponse.bind(res, next)
-      );
-    }
-  ]);
-
-  admin.post("/domain", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_domains,
-      emptyVal
-    ),
-    function(req, res, next) {
-      let files = [req.body.logo, req.body.image];
-      fileUpload.isPerm(files, (er, results) => {
-        if (er) return next(createError(400, er));
-        let tasks = results.reduce((sum, x, index) => {
-          if (!x)
-            sum.push(
-              fileUpload.moveToPermanentSite.bind(
-                fileUpload,
-                files[index],
-                true // this file should be available to everyone.
-              )
-            );
-          return sum;
-        }, []);
-        if (tasks.length)
-          async.parallel(tasks, er => {
-            if (er) return next(createError(400, er));
-            infrastructure.saveDomain(req.body, sendResponse.bind(res, next));
-          });
-        else infrastructure.saveDomain(req.body, sendResponse.bind(res, next));
-      });
-    }
-  ]);
-
-  admin.get("/domain", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_domains,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.getDomains({}, sendResponse.bind(res, next));
-    }
-  ]);
-
-  admin.get("/domain/paged", [
-    verify,
-    checkClaim.bind(
-      null,
-      infrastructure.adminClaims.can_manage_domains,
-      emptyVal
-    ),
-    function(req, res, next) {
-      infrastructure.getDomainRange(
-        Object.assign(
-          (req.query.name && { name: toRegex(req.query.name) }) || {},
-          getRangeQuery(req)
-        ),
-        parseInt(req.query.count),
-        sendResponse.bind(res, next)
-      );
-    }
-  ]);
-
-  admin.get("/menu", [
-    verify,
-    checkClaim.bind(null, infrastructure.adminClaims.can_manage_menu, emptyVal),
-    function(req, res, next) {
-      infrastructure.getMenuRange(
-        Object.assign(
-          (req.query.title && {
-            displayLabel: toRegex(req.query.title)
-          }) ||
-            {},
-          getRangeQuery(req)
-        ),
-        parseInt(req.query.count),
         sendResponse.bind(res, next)
       );
     }

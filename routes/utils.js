@@ -1,5 +1,7 @@
 const debug = require("debug")("furmly-server:route-utils");
 const createError = require("http-errors");
+const infrastructure = require("../lib/setup_infrastructure");
+const furmlyEngine = require("../lib/setup_fumly_engine");
 
 function createContext(req) {
   const context =
@@ -7,9 +9,9 @@ function createContext(req) {
   const authorized = req._clientAuthorized;
   const domain = Object.assign({}, req._domain);
   const uiOnDemand =
-    (req.body && req.body.$uiOnDemand) || req.query.$uiOnDemand;
+    (req.body && req.body.$uiOnDemand) || (req.query && req.query.$uiOnDemand);
   const user = Object.assign({}, req.user);
-  const requestContext = Object.assign({}, req.headers);
+  const requestContext = Object.assign({}, req.headers, { secure: req.secure });
   Object.defineProperties(context, {
     $authorized: {
       enumerable: false,
@@ -46,7 +48,7 @@ function createContext(req) {
   return context;
 }
 
-function checkIfClaimIsRequired(infrastructure, type, value, req, res, next) {
+function checkIfClaimIsRequired(type, value, req, res, next) {
   infrastructure.getClaims(
     {
       type: type,
@@ -69,7 +71,7 @@ VerificationOverride.prototype.verify = function(req, res, next) {
   return this.fn(req, res, next);
 };
 
-function getDomain(infrastructure, domainId, req, fn) {
+function getDomain(domainId, req, fn) {
   infrastructure.getDomains(
     getObjectIdOrQuery(domainId, { uid: domainId }),
     (er, domains) => {
@@ -122,7 +124,7 @@ function checkClaim(type, value, failed, req, res, next) {
   next(new createError.Unauthorized());
 }
 
-function getObjectIdOrQuery(furmlyEngine, id, or, propName) {
+function getObjectIdOrQuery(id, or, propName) {
   var query = { $or: [or] };
 
   if (furmlyEngine.isValidID(id)) {
@@ -144,7 +146,7 @@ function sendResponse(next, er, result) {
   this.send(result);
 }
 
-function getRangeQuery(furmlyEngine, req, forceId) {
+function getRangeQuery(req, forceId) {
   var query = req.query.lastId
     ? {
         _id: {

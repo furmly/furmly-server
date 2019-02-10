@@ -5,14 +5,14 @@ const utils = require("./utils");
 const ensureProcessorCanRunStandalone = require("./middlewares/ensureProcessorCanRunStandalone");
 const verify = require("./middlewares/verify");
 const express = require("express");
-const furmlyEngine = require("../lib/furmly_engine");
+const furmlyEngine = require("../lib/setup_fumly_engine");
 const fileUpload = require("../lib/uploader");
-const infrastructure = require("../lib/index");
+const infrastructure = require("../lib/setup_infrastructure");
 const config = require("../config");
 
 function setup(app) {
-  const getObjectIdOrQuery = utils.getObjectIdOrQuery.bind(null, furmlyEngine);
-  const getDomain = utils.getDomain.bind(null, infrastructure);
+  const getObjectIdOrQuery = utils.getObjectIdOrQuery;
+  const getDomain = utils.getDomain;
   const VerificationOverride = utils.VerificationOverride;
   const createContext = utils.createContext;
   const downloadRouter = express.Router();

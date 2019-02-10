@@ -1,1 +1,0 @@
-"%PROGRAMFILES%/Git/git-bash.exe" "./restore.sh" furmly furmly_web

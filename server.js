@@ -6,7 +6,7 @@ const passport = require("passport");
 const passport_auth = require("./lib/passport_auth");
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
-const infrastructure = require("./lib/index");
+const infrastructure = require("./lib/setup_infrastructure");
 const _init = require("./lib/init");
 const all = require("require-all");
 const path = require("path");
@@ -42,17 +42,27 @@ const _configure = (_root, opts = {}) => {
   Object.keys(routes).forEach(key => {
     routes[key](_root);
   });
+  _root.use(function(er, req, res, next) {
+    res.status(500).send({ message: er.message });
+  });
 };
 
-const start = cfg => {
+const start = (cfg = {}) => {
   const app = express();
-  const options = {
-    key: fs.readFileSync("server-key.pem"),
-    cert: fs.readFileSync("server-crt.pem"),
-    ca: fs.readFileSync("ca-crt.pem"),
-    requestCert: true,
-    rejectUnauthorized: false
-  };
+  const options = Object.assign(
+    {
+      key: fs.readFileSync(
+        cfg.privateKeyLocation || config.get("server.privateKeyLocation")
+      ),
+      cert: fs.readFileSync(
+        cfg.certificateLoaction || config.get("server.certificateLocation")
+      ),
+      ca: fs.readFileSync(cfg.caLocation || config.get("server.caLocation")),
+      requestCert: true,
+      rejectUnauthorized: false
+    },
+    cfg.httpsOptions
+  );
   const port = cfg.port || config.get("port") || process.env.PORT || 443;
   debug(`server set to listen on ${port}`);
   _configure(app);

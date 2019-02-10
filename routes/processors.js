@@ -4,8 +4,8 @@ const debug = require("debug")("furmly-server:processors");
 const ensureProcessorCanRunStandalone = require("./middlewares/ensureProcessorCanRunStandalone");
 const verifyIfRequired = require("./middlewares/verifyIfRequired");
 const createError = require("http-errors");
-const furmlyEngine = require("../lib/furmly_engine");
-const infrastructure = require("../lib/index");
+const furmlyEngine = require("../lib/setup_fumly_engine");
+const infrastructure = require("../lib/setup_infrastructure");
 const sendResponse = utils.sendResponse;
 const async = require("async");
 function setup(app, options) {
@@ -14,7 +14,7 @@ function setup(app, options) {
   const createContext = utils.createContext;
   const processors = express.Router();
   const getObjectIdOrQuery = utils.getObjectIdOrQuery;
-  const getDomain = utils.getDomain.bind(null, infrastructure);
+  const getDomain = utils.getDomain;
   const verifyProcessorIfRequired = verifyIfRequired.bind(
     null,
     req => req.processor
@@ -27,7 +27,7 @@ function setup(app, options) {
   );
   processors.param("id", function(req, res, next, id) {
     debug("fetching processor " + id);
-    const query = getObjectIdOrQuery(furmlyEngine, id, { uid: id });
+    const query = getObjectIdOrQuery(id, { uid: id });
     debug(query);
     furmlyEngine.queryProcessor(
       query,

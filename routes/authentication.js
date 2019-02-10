@@ -1,7 +1,7 @@
 const createError = require("http-errors");
 const oauth2orize = require("oauth2orize");
 const passport = require("passport");
-const infrastructure = require("../lib/index");
+const infrastructure = require("../lib/setup_infrastructure");
 function setup(app) {
   var server = oauth2orize.createServer();
   server.exchange(

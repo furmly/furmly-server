@@ -1,6 +1,12 @@
-let env = require("./fromEnv");
+const env = require("./fromEnv");
+const path = require("path");
 module.exports = {
   port: null,
+  server: {
+    caLocation: path.join(__dirname, "../ca-crt.pem"),
+    certificateLocation: path.join(__dirname, "../server-crt.pem"),
+    privateKeyLocation: path.join(__dirname, "../server-key.pem")
+  },
   developers: {
     superc: 1
   },
@@ -11,21 +17,37 @@ module.exports = {
     CN: "ca"
   },
   clients: {
+    studio: {
+      clientId: env(
+        "FURMLY_STUDIO_CLIENT_ID",
+        "nWIN5ZtLdjvDi2dAkT23juKIKaSYE242"
+      ),
+      clientSecret: env(
+        "FURMLY_STUDIO_CLIENT_SECRET",
+        "5EIHmKH1WRlM6eY5cdNX1bWFeOnKhLLw"
+      )
+    },
     web: {
-      clientId: "n2wZASNunUShF2xQ0o4P44xImeSX6hlm",
-      clientSecret: env("WEB_CLIENT_SECRET", "kLqqED9oQnlnRxSjJTQZmRwH4ZKekNNW")
+      clientId: env("FURMLY_WEB_CLIENT_ID", "n2wZASNunUShF2xQ0o4P44xImeSX6hlm"),
+      clientSecret: env(
+        "FURMLY_WEB_CLIENT_SECRET",
+        "kLqqED9oQnlnRxSjJTQZmRwH4ZKekNNW"
+      )
     },
     mobile: {
-      clientId: "4FlmQMCdHXcMqKOQeyb6dZOzpRzMMeIe",
+      clientId: env(
+        "FURMLY_MOBILE_CLIENT_ID",
+        "4FlmQMCdHXcMqKOQeyb6dZOzpRzMMeIe"
+      ),
       clientSecret: env(
-        "MOBILE_CLIENT_SECRET",
+        "FURMLY_MOBILE_CLIENT_SECRET",
         "Kw9XdpUr3hyMZzJsGF5wD5bswWzmNeXs"
       )
     }
   },
   admin: {
     username: "admin",
-    password: env("ADMIN_PASSWORD", "password")
+    password: env("FURMLY_ADMIN_PASSWORD", "password")
   },
   fileUpload: {
     ttl: 60000000,
@@ -33,7 +55,7 @@ module.exports = {
     tempDir: "./temp"
   },
   data: {
-    web_url: env("WEB_DB_URL", "mongodb://localhost:27017/furmly_web"),
+    web_url: env("FURMLY_WEB_DB_URL", "mongodb://localhost:27017/furmly_web"),
     furmly_url: env("FURMLY_DB_URL", "mongodb://localhost:27017/furmly")
   },
   migrations: {
@@ -49,10 +71,10 @@ module.exports = {
     ttl: 50000
   },
   codeGenerator: {
-    defaultOptimizations: [
+    defaultOptimizations: env("FURMLY_CODE_GENERATOR_OPTIMIZATIONS", [
       "Try-catch-all-async-functions",
       "Count-all-lib-references"
-    ]
+    ])
   },
   entRepo: {
     storeTTL: 600000
@@ -64,7 +86,7 @@ module.exports = {
     issuer: "seadragon:authentication_server",
     audience: "seadragon:modules",
     secret: env(
-      "DEFAULT_TOKEN_SECRET",
+      "FURMLY_DEFAULT_TOKEN_SECRET",
       "IxrAjDoa2FqElO7IhrSrUJELhUckePEPVpaePlS_Xaw"
     )
   },
