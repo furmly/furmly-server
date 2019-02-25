@@ -79,8 +79,9 @@ module.exports = {
   entRepo: {
     storeTTL: 600000
   },
-  userManager: {
-    tokenTTL: 86400
+  infrastructure: {
+    tokenTTL: 86400,
+    compress: env("COMPRESS_USER_IN_JWT", true, "bool")
   },
   token_generator: {
     issuer: "seadragon:authentication_server",

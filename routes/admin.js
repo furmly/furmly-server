@@ -33,6 +33,7 @@ function setup(app) {
   ]);
   admin.get("/acl", [
     function(req, res, next) {
+      debug("acl called...");
       if (req.headers.authorization) {
         verify(req, res, function() {
           infrastructure.acl(
@@ -42,7 +43,7 @@ function setup(app) {
             req.query.category,
             function(er, menu) {
               if (er) return next(createError(400, er));
-              debugger;
+
               furmlyEngine.queryProcessor(
                 {
                   uid: furmlyEngine.constants.UIDS.PROCESSOR.MENU_FILTER

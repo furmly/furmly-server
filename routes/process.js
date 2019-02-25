@@ -82,7 +82,7 @@ function setup(app) {
       if (req.user) {
         //populate domain info.
         return utils.getDomain(req.user.domain, req, er => {
-          if (er) return next(createError(500, er));
+          if (er) return next(createError(500, er.message));
           send();
         });
       }
