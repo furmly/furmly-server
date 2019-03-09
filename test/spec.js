@@ -203,18 +203,5 @@ describe("Integration Tests", function() {
           done();
         });
     });
-
-    // it("should be able to access processes it has access to", function(done) {
-    // 	chai
-    // 		.request(server)
-    // 		.get("/api/process")
-    // 		.set("Authorization", process_accessToken)
-    // 		.end(function(err, res) {
-    // 			assert.isNull(err);
-    // 			assert.isArray(res.body);
-    // 			assert.equal(res.body.length, 2);
-    // 			done();
-    // 		});
-    // });
   });
 });

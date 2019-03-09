@@ -37,6 +37,9 @@ node_modules/
 jspm_packages/
 temp/
 temp_test/
+perm/
+perm_test/
+error/
 
 
 # Typescript v1 declaration files
