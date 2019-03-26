@@ -57,12 +57,16 @@ const start = (cfg = {}) => {
       cert: fs.readFileSync(
         cfg.certificateLoaction || config.get("server.certificateLocation")
       ),
-      ca: fs.readFileSync(cfg.caLocation || config.get("server.caLocation")),
       requestCert: true,
-      rejectUnauthorized: false
+      rejectUnauthorized: !config.get("server.withCA")
     },
     cfg.httpsOptions
   );
+  if (!options.rejectUnauthorized) {
+    options.ca = fs.readFileSync(
+      cfg.caLocation || config.get("server.caLocation")
+    );
+  }
   const port = cfg.port || config.get("port") || process.env.PORT || 443;
   debug(`server set to listen on ${port}`);
   _configure(app);

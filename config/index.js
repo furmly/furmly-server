@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv-expand")(require("dotenv").config());
 
 if (!process.env.NODE_CONFIG_DIR) {
   process.env.NODE_CONFIG_DIR = __dirname;

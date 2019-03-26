@@ -6,9 +6,12 @@ function _clientAuthentication(req, res, next) {
     var cert = req.socket.getPeerCertificate();
     if (cert.subject) {
       debug(`certificate subject: ${JSON.stringify(cert.subject, null, " ")}`);
+      debug(`issuer:${JSON.stringify(cert.issuer, null, " ")}`);
+      const name = `developers.${cert.subject.CN}`;
       req._clientAuthorized =
-        !!config.get(`developers.${cert.subject.CN}`) &&
-        cert.issuer.CN == config.get("CA.CN");
+        config.has(name) &&
+        !!config.get(name) &&
+        config.get("CA.CN")[cert.issuer.CN];
       debug(
         `client is ${req._clientAuthorized ? "authorized" : "unauthorized"}`
       );

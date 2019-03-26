@@ -3,18 +3,23 @@ const path = require("path");
 module.exports = {
   port: null,
   server: {
-    caLocation: path.join(__dirname, "../ca-crt.pem"),
-    certificateLocation: path.join(__dirname, "../server-crt.pem"),
-    privateKeyLocation: path.join(__dirname, "../server-key.pem")
+    withCA: env("FURMLY_SERVER_WITH_CA", "true", "bool"),
+    caLocation: env("FURMLY_CA_PATH", path.join(__dirname, "../ca-crt.pem")),
+    certificateLocation: env(
+      "FURMLY_CERT_PATH",
+      path.join(__dirname, "../server-crt.pem")
+    ),
+    privateKeyLocation: env(
+      "FURMLY_PRIV_KEY_PATH",
+      path.join(__dirname, "../server-key.pem")
+    )
   },
-  developers: {
-    superc: 1
-  },
+  developers: env("FURMLY_ALLOWED", "superc", "map"),
   threadPool: {
     size: null
   },
   CA: {
-    CN: "ca"
+    CN: env("FURMLY_CA_CN", "ca", "map")
   },
   clients: {
     studio: {
@@ -46,11 +51,11 @@ module.exports = {
     }
   },
   admin: {
-    username: "admin",
+    username: env("FURMLY_ADMIN_USERNAME", "dev"),
     password: env("FURMLY_ADMIN_PASSWORD", "password")
   },
   fileUpload: {
-    ttl: 60000000,
+    ttl: env("FURMLY_FILEUPLOAD_TTL", 60000000),
     permDir: "./perm",
     tempDir: "./temp"
   },
@@ -59,16 +64,16 @@ module.exports = {
     furmly_url: env("FURMLY_DB_URL", "mongodb://localhost:27017/furmly")
   },
   migrations: {
-    folder: "../migrations"
+    folder: env("FURMLY_MIGRATIONS_FOLDER", "../migrations")
   },
   processors: {
-    ttl: 165000
+    ttl: env("FURMLY_PROCESSORS_TTL", 165000)
   },
   log: {
     server: true
   },
   postprocessors: {
-    ttl: 50000
+    ttl: env("FURMLY_POST_PROCESSORS_TTL", 5000)
   },
   codeGenerator: {
     defaultOptimizations: env("FURMLY_CODE_GENERATOR_OPTIMIZATIONS", [
@@ -77,11 +82,11 @@ module.exports = {
     ])
   },
   entRepo: {
-    storeTTL: 600000
+    storeTTL: env("FURMLY_STORE_TTL", 600000)
   },
   infrastructure: {
     tokenTTL: 86400,
-    compress: env("COMPRESS_USER_IN_JWT", true, "bool")
+    compress: env("FURMLY_COMPRESS_USER_IN_JWT", true, "bool")
   },
   token_generator: {
     issuer: "seadragon:authentication_server",
@@ -93,10 +98,10 @@ module.exports = {
   },
   scoped_tokens: {
     download: {
-      issuer: "seadragon:authentication_server_downwload",
+      issuer: "seadragon:authentication_server_download",
       audience: "seadragon:modules",
       secret: env(
-        "SCOPED_TOKEN_SECRET",
+        "FURML_SCOPED_TOKEN_SECRET",
         "IxrZiDoa2FqElO8IhrSrUJILhUckePEPVpaePlS_Xaw"
       )
     }
