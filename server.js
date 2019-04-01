@@ -50,13 +50,9 @@ const _configure = (_root, opts = {}) => {
 const start = (cfg = {}) => {
   const app = express();
   let options = {};
+  debug(JSON.stringify(cfg));
   const port =
-    cfg.port ||
-    config.get("port") ||
-    process.env.PORT ||
-    cfg.protocol == "https"
-      ? 443
-      : 8080;
+    cfg.port || config.get("port") || (cfg.protocol == "https" ? 443 : 8080);
   if (!cfg.protocol || cfg.protocol == "https") {
     options = Object.assign(
       {

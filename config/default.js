@@ -1,7 +1,7 @@
 const env = require("./fromEnv");
 const path = require("path");
 module.exports = {
-  port: null,
+  port: env("PORT", null),
   server: {
     withCA: env("FURMLY_SERVER_WITH_CA", "true", "bool"),
     caLocation: env("FURMLY_CA_PATH", path.join(__dirname, "../ca-crt.pem")),
