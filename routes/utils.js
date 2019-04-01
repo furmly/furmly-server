@@ -97,6 +97,7 @@ function checkClaim(type, value, failed, req, res, next) {
     failed = null;
   }
   var _value = value;
+
   if (req.user) {
     value = value(req);
     var joinedClaims = req.user.roles.reduce(
@@ -107,6 +108,7 @@ function checkClaim(type, value, failed, req, res, next) {
         claims: []
       }
     );
+    debug(`object to be checked:${value}`);
     var hasClaim = joinedClaims.filter(function(claim) {
       return claim.type == type && claim.value == value;
     });
@@ -117,7 +119,6 @@ function checkClaim(type, value, failed, req, res, next) {
     }
 
     debug(`user does not have claim of type:${type} and value:${value}`);
-    debug(`user has ${JSON.stringify(joinedClaims, null, " ")}`);
   }
 
   if (failed) return failed(type, _value, req, res, next);

@@ -49,28 +49,38 @@ const _configure = (_root, opts = {}) => {
 
 const start = (cfg = {}) => {
   const app = express();
-  const options = Object.assign(
-    {
-      key: fs.readFileSync(
-        cfg.privateKeyLocation || config.get("server.privateKeyLocation")
-      ),
-      cert: fs.readFileSync(
-        cfg.certificateLoaction || config.get("server.certificateLocation")
-      ),
-      requestCert: true,
-      rejectUnauthorized: !config.get("server.withCA")
-    },
-    cfg.httpsOptions
-  );
-  if (!options.rejectUnauthorized) {
-    options.ca = fs.readFileSync(
-      cfg.caLocation || config.get("server.caLocation")
+  let options = {};
+  const port =
+    cfg.port ||
+    config.get("port") ||
+    process.env.PORT ||
+    cfg.protocol == "https"
+      ? 443
+      : 8080;
+  if (!cfg.protocol || cfg.protocol == "https") {
+    options = Object.assign(
+      {
+        key: fs.readFileSync(
+          cfg.privateKeyLocation || config.get("server.privateKeyLocation")
+        ),
+        cert: fs.readFileSync(
+          cfg.certificateLoaction || config.get("server.certificateLocation")
+        ),
+        requestCert: true,
+        rejectUnauthorized: !config.get("server.withCA")
+      },
+      cfg.options
     );
+    if (!options.rejectUnauthorized) {
+      options.ca = fs.readFileSync(
+        cfg.caLocation || config.get("server.caLocation")
+      );
+    }
   }
-  const port = cfg.port || config.get("port") || process.env.PORT || 443;
+
   debug(`server set to listen on ${port}`);
   _configure(app);
-  require("https")
+  require(cfg.protocol || "https")
     .createServer(options, app)
     .listen(port, _init);
   return app;

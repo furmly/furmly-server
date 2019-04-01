@@ -88,6 +88,9 @@ module.exports = {
     tokenTTL: 86400,
     compress: env("FURMLY_COMPRESS_USER_IN_JWT", true, "bool")
   },
+  processor_config: {
+    disableSecurity: env("FURMLY_DISABLE_SECURITY", false, "bool")
+  },
   token_generator: {
     issuer: "seadragon:authentication_server",
     audience: "seadragon:modules",
