@@ -86,7 +86,8 @@ module.exports = {
   },
   infrastructure: {
     tokenTTL: 86400,
-    compress: env("FURMLY_COMPRESS_USER_IN_JWT", true, "bool")
+    compress: env("FURMLY_COMPRESS_USER_IN_JWT", true, "bool"),
+    maxInvalidCredentials: env("FURMLY_MAX_INVALID_CREDENTIALS", 3)
   },
   processor_config: {
     disableSecurity: env("FURMLY_DISABLE_SECURITY", false, "bool")
