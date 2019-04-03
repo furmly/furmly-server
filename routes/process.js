@@ -16,7 +16,7 @@ function setup(app) {
   const ensureHasProcessClaim = utils.checkClaim.bind(
     null,
     infrastructure.constants.CLAIMS.PROCESS,
-    utils.checkId,
+    req => req.process._id.toString(),
     utils.checkIfClaimIsRequired
   );
   const verifyProcessIfRequired = verifyIfRequired.bind(

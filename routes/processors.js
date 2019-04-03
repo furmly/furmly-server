@@ -22,7 +22,7 @@ function setup(app, options) {
   const ensureHasProcessorClaim = utils.checkClaim.bind(
     null,
     infrastructure.constants.CLAIMS.PROCESSOR,
-    utils.checkId,
+    req => req.processor._id.toString(),
     utils.checkIfClaimIsRequired
   );
   processors.param("id", function(req, res, next, id) {

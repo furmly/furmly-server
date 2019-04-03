@@ -89,12 +89,12 @@ function getDomain(domainId, req, fn) {
   );
 }
 
-function checkClaim(type, value, failed, req, res, next) {
+function checkClaim(type, value, checkNext, req, res, next) {
   if (Array.prototype.slice(arguments).length == 5) {
     next = res;
     res = req;
-    req = failed;
-    failed = null;
+    req = checkNext;
+    checkNext = null;
   }
   var _value = value;
 
@@ -114,6 +114,7 @@ function checkClaim(type, value, failed, req, res, next) {
     });
 
     if (hasClaim.length) {
+      debug(`user has claim for ${value}`);
       next();
       return;
     }
@@ -121,7 +122,7 @@ function checkClaim(type, value, failed, req, res, next) {
     debug(`user does not have claim of type:${type} and value:${value}`);
   }
 
-  if (failed) return failed(type, _value, req, res, next);
+  if (checkNext) return checkNext(type, _value, req, res, next);
   next(new createError.Unauthorized());
 }
 
@@ -170,15 +171,10 @@ function toRegex(string) {
   return new RegExp(string, "i");
 }
 
-function checkId(req) {
-  return req.params.id;
-}
-
 function emptyVal() {
   return null;
 }
 module.exports = {
-  checkId,
   emptyVal,
   createContext,
   checkIfClaimIsRequired,

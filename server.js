@@ -43,7 +43,13 @@ const _configure = (_root, opts = {}) => {
     routes[key](_root);
   });
   _root.use(function(er, req, res, next) {
-    res.end(res.writeHead(400, typeof er == "string" ? er : er.message));
+    debug(er);
+    res.end(
+      res.writeHead(
+        er.statusCode || 500,
+        typeof er == "string" ? er : er.message
+      )
+    );
   });
 };
 
