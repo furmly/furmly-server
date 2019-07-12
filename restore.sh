@@ -1,4 +1,4 @@
-echo backing up %*
+echo restoring %*
 if [[ -z "${MONGO_HOME}" ]]; then
   _MONGO_HOME="/c/program files/MongoDB/Server/3.4/bin"
 else
