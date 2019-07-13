@@ -82,7 +82,11 @@ module.exports = {
     ])
   },
   entRepo: {
-    storeTTL: env("FURMLY_STORE_TTL", 600000)
+    storeTTL: env("FURMLY_STORE_TTL", 600000),
+    liveFolder: env(
+      "FURMLY_LIVE_FOLDER",
+      path.dirname(require.main.filename) + "./live"
+    )
   },
   infrastructure: {
     tokenTTL: 86400,
