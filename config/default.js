@@ -2,6 +2,7 @@ const env = require("./fromEnv");
 const path = require("path");
 module.exports = {
   port: env("PORT", null),
+  init: env("FURMLY_INIT_LIVE", false),
   server: {
     withCA: env("FURMLY_SERVER_WITH_CA", "true", "bool"),
     caLocation: env("FURMLY_CA_PATH", path.join(__dirname, "../ca-crt.pem")),
@@ -85,7 +86,7 @@ module.exports = {
     storeTTL: env("FURMLY_STORE_TTL", 600000),
     liveFolder: env(
       "FURMLY_LIVE_FOLDER",
-      path.dirname(require.main.filename) + "./live"
+      path.dirname(require.main.filename) + "/live"
     )
   },
   infrastructure: {
