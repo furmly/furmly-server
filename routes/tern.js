@@ -1,22 +1,27 @@
 const createError = require("http-errors");
-const furmlyEngine = require("../lib/setup_fumly_engine");
+const express = require("express");
+const furmlyEngine = require("../lib/setup_furmly_engine");
 
 function setup(_root) {
   if (process.env.NODE_ENV !== "production") {
-    _root.post("/api/tern/:context", (req, res) => {
-      furmlyEngine.addDoc(
+    const tern = express.Router();
+    tern.post("/:context", (req, res) => {
+      furmlyEngine.addDocToTern(
         req.params.context || "processor",
         req.body._id,
         req.body.text
       );
       res.send();
     });
-    _root.delete("/api/tern/:context", (req, res) => {
-      furmlyEngine.delDoc(req.params.context || "processor", req.body._id);
+    tern.delete("/:context", (req, res) => {
+      furmlyEngine.delDocFromTern(
+        req.params.context || "processor",
+        req.body._id
+      );
       res.send();
     });
-    _root.post("/api/tern/request/:context", (req, res, next) => {
-      furmlyEngine.request(
+    tern.post("/request/:context", (req, res, next) => {
+      furmlyEngine.requestForTern(
         req.params.context || "processor",
         req.body,
         (er, response) => {
@@ -32,6 +37,7 @@ function setup(_root) {
         }
       );
     });
+    _root.use("/api/tern", [tern]);
   }
 }
 

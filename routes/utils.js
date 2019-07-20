@@ -1,7 +1,7 @@
 const debug = require("debug")("furmly-server:route-utils");
 const createError = require("http-errors");
 const infrastructure = require("../lib/setup_infrastructure");
-const furmlyEngine = require("../lib/setup_fumly_engine");
+const furmlyEngine = require("../lib/setup_furmly_engine");
 
 function createContext(req) {
   const context =
