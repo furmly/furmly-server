@@ -24,27 +24,24 @@ module.exports = {
   },
   clients: {
     studio: {
-      clientId: env(
-        "FURMLY_STUDIO_CLIENT_ID",
-        "nWIN5ZtLdjvDi2dAkT23juKIKaSYE242"
-      ),
+      name: "Studio",
+      _id: env("FURMLY_STUDIO_CLIENT_ID", "nWIN5ZtLdjvDi2dAkT23juKIKaSYE242"),
       clientSecret: env(
         "FURMLY_STUDIO_CLIENT_SECRET",
         "5EIHmKH1WRlM6eY5cdNX1bWFeOnKhLLw"
       )
     },
     web: {
-      clientId: env("FURMLY_WEB_CLIENT_ID", "n2wZASNunUShF2xQ0o4P44xImeSX6hlm"),
+      name: "A Website",
+      _id: env("FURMLY_WEB_CLIENT_ID", "n2wZASNunUShF2xQ0o4P44xImeSX6hlm"),
       clientSecret: env(
         "FURMLY_WEB_CLIENT_SECRET",
         "kLqqED9oQnlnRxSjJTQZmRwH4ZKekNNW"
       )
     },
     mobile: {
-      clientId: env(
-        "FURMLY_MOBILE_CLIENT_ID",
-        "4FlmQMCdHXcMqKOQeyb6dZOzpRzMMeIe"
-      ),
+      name: "A Mobile App",
+      _id: env("FURMLY_MOBILE_CLIENT_ID", "4FlmQMCdHXcMqKOQeyb6dZOzpRzMMeIe"),
       clientSecret: env(
         "FURMLY_MOBILE_CLIENT_SECRET",
         "Kw9XdpUr3hyMZzJsGF5wD5bswWzmNeXs"
