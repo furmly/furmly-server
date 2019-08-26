@@ -27,7 +27,7 @@ describe("Integration Tests", function() {
               .request(server)
               .post("/auth/token")
               .send({
-                client_id: config.clients.web.clientId,
+                client_id: config.clients.web._id,
                 client_secret: config.clients.web.clientSecret,
                 grant_type: "password",
                 username: "admin",
