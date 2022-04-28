@@ -18,7 +18,7 @@
     "restore-furmly-server": "./restore.sh"
   },
   "dependencies": {
-    "async": "^2.4.1",
+    "async": "^2.6.4",
     "bcrypt": "^3.0.4",
     "body-parser": "^1.18.3",
     "config": "^2.0.1",
